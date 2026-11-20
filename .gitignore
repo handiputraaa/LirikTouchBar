@@ -1,0 +1,6 @@
+.build/
+LirikTouchBar.app/
+*.zip
+*.log
+*.xcuserstate
+.DS_Store
