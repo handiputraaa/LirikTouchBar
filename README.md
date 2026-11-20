@@ -55,7 +55,7 @@ is minimized or hidden.
 ### From a release
 
 1. Download `LirikTouchBar-vX.Y.Z.zip` from the
-   [Releases](https://github.com/YOUR_USERNAME/LirikTouchBar/releases) page.
+   [Releases](https://github.com/handiputraaa/LirikTouchBar/releases) page.
    See the full [installation tutorial](docs/INSTALL.md) for a step-by-step
    guide you can share with other people.
 2. Unzip and drag `LirikTouchBar.app` into `/Applications`.
@@ -71,7 +71,7 @@ is minimized or hidden.
 Requires macOS 13+ and the Xcode command line tools.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/LirikTouchBar.git
+git clone https://github.com/handiputraaa/LirikTouchBar.git
 cd LirikTouchBar
 make build
 open LirikTouchBar.app

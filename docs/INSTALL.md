@@ -20,7 +20,7 @@ Bar. It runs in the menu bar and needs no Spotify account or API key.
 
 ## Step 1 — Download the app
 
-Go to the [Releases page](https://github.com/&lt;your-username&gt;/LirikTouchBar/releases)
+Go to the [Releases page](https://github.com/handiputraaa/LirikTouchBar/releases)
 and download `LirikTouchBar-vX.Y.Z.zip`.
 
 ## Step 2 — Install it
