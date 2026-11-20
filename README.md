@@ -17,35 +17,47 @@ desktop app onto your MacBook Pro Touch Bar.
 - Fetches time-synced LRC lyrics from LRCLIB and caches them locally.
 - Interpolates playback position between polls, so the highlighted line
   changes within ~0.15 seconds.
-- Shows lyrics in the menu bar, in a floating Lyric Panel, and on the Touch
-  Bar (current line, upcoming lines, progress bar, and play/pause).
+- Shows lyrics on the Touch Bar with the lyric on the left and **previous /
+  play-pause / next controls** on the right, plus a floating Lyric Panel.
+- A compact **♪ menu-bar icon** gives quick access to Preferences and controls
+  instead of printing the lyric across the top bar.
 - Global hotkey `⌥⌘L` brings the Lyric Panel forward.
 - Preferences for refresh interval, font size, visible lines, launch at login.
+- Ships as a **universal binary** — runs natively on both Apple Silicon (M
+  series) and Intel Macs. Requires macOS 13+.
 
 ## About the Touch Bar
 
 Apple's public `NSTouchBar` API only draws an app's Touch Bar while **that app
-is frontmost**. A background utility cannot paint the Touch Bar over other
-apps without private APIs, so this project deliberately uses only public APIs.
+is frontmost**. To keep lyrics visible while you use Spotify or any other app,
+Lirik presents a **system-modal Touch Bar** using private AppKit / DFRFoundation
+APIs (see `PrivateTouchBar.swift`). This bar stays on the physical Touch Bar
+regardless of which app is focused, and regardless of whether the Lyric Panel
+is minimized or hidden.
 
-In practice:
+- The system bar has the **current lyric on the left** and three transport
+  buttons on the right: `backward`, `play/pause` (icon follows playback state),
+  and `forward`. They control Spotify directly.
+- A **♪ button** is installed in the Touch Bar Control Strip. Tap it to hide or
+  re-show the lyric bar. If it is missing, check
+  System Settings → Keyboard → Touch Bar → **Show Control Strip**.
+- The **menu bar** has a ♪ icon (with the current lyric as a hover tooltip).
+  Click it for Preferences, playback controls, and the Touch Bar toggle.
+- `⌥⌘L` focuses the Lyric Panel; it is optional — lyrics are already on the
+  system bar.
 
-- The **menu bar** always shows the current lyric, in any app.
-- The **Lyric Panel** owns the Touch Bar while it is focused. Press `⌥⌘L`.
-- If you **minimize** the Lyric Panel, the app falls back to an
-  application-level Touch Bar so lyrics keep showing. Bring the panel back
-  with `⌥⌘L` or the menu bar item.
-- When you switch to another app, macOS shows that app's Touch Bar.
-
-Apps that paint the Touch Bar globally rely on private APIs and tend to break
-after macOS updates; that is intentionally avoided here.
+> **Private API warning:** these APIs are undocumented, so this app cannot be
+> distributed on the App Store and a future macOS update may break the
+> system-modal bar. The menu bar and floating panel keep working in that case.
 
 ## Install
 
 ### From a release
 
 1. Download `LirikTouchBar-vX.Y.Z.zip` from the
-   [Releases](https://github.com/yourname/LirikTouchBar/releases) page.
+   [Releases](https://github.com/YOUR_USERNAME/LirikTouchBar/releases) page.
+   See the full [installation tutorial](docs/INSTALL.md) for a step-by-step
+   guide you can share with other people.
 2. Unzip and drag `LirikTouchBar.app` into `/Applications`.
 3. On first launch, right-click the app → **Open** (it is ad-hoc signed, not
    notarized). If macOS still blocks it:
@@ -59,7 +71,7 @@ after macOS updates; that is intentionally avoided here.
 Requires macOS 13+ and the Xcode command line tools.
 
 ```bash
-git clone https://github.com/yourname/LirikTouchBar.git
+git clone https://github.com/YOUR_USERNAME/LirikTouchBar.git
 cd LirikTouchBar
 make build
 open LirikTouchBar.app
@@ -81,24 +93,28 @@ GitHub Actions builds and uploads a zip artifact on every push and pull request.
 
 ## Usage
 
-- Menu bar icon — current lyric line; click for the menu.
-- `⌥⌘L` — focus the Lyric Panel and activate the Touch Bar.
-- Menu bar menu — Show Lyrics Panel, Play/Pause, Refresh Lyrics, Preferences, Quit.
+- ♪ menu-bar icon — click for the menu; hover to see the current lyric.
+- Menu items — Show Lyrics Panel, Show/Hide Touch Bar Lyrics, Play/Pause,
+  Refresh Lyrics, Preferences…, Quit.
+- `⌥⌘L` — focus the Lyric Panel (optional; lyrics are already on the system bar).
 - Preferences — refresh interval, Touch Bar font size, number of visible lines,
   menu-bar display, launch at login.
 
 ## Troubleshooting
 
-- **Nothing appears to happen** — this is a menu-bar app. Look for the `♫`
-  item in the top menu bar. The panel opens automatically on first launch.
+- **Nothing appears to happen** — this is a menu-bar app. Look for the `♪`
+  icon in the top menu bar and click it for Preferences. The panel opens
+  automatically on first launch.
 - **Diagnostics** — `~/Library/Logs/LirikTouchBar.log` records Spotify reads,
   lyric lookups, the currently displayed line, and panel minimize/restore.
 - **"Cannot reach Spotify"** — check System Settings → Privacy & Security →
   Automation, and make sure Spotify desktop is running.
 - **"No synced lyrics found"** — LRCLIB is community sourced; coverage varies
   by track. The configured fallback text is shown instead.
-- **Touch Bar shows function keys** — the Lyric Panel must be focused (or the
-  app-level fallback active). Click the panel or press `⌥⌘L`.
+- **Touch Bar shows function keys** — tap the ♪ Control Strip button, or check
+  `~/Library/Logs/LirikTouchBar.log` for "System Touch Bar presented". If the
+  private API was broken by a macOS update, use the floating Lyric Panel and
+  the menu bar icon's hover tooltip.
 
 ## Project layout
 
@@ -114,16 +130,28 @@ Sources/LirikTouchBar/
 ├── LyricPanelWindowController.swift focusable panel that owns the Touch Bar
 ├── StatusBarController.swift        menu bar item and menu
 ├── HotKeyManager.swift              ⌥⌘L global hotkey (Carbon)
+├── PrivateTouchBar.swift            private system-modal Touch Bar APIs
+├── SystemLyricsTouchBar.swift       always-on lyric bar + Control Strip button
 ├── AppSettings.swift                persisted preferences
 ├── SettingsView.swift               SwiftUI preferences + window
 └── DebugLog.swift                   diagnostic logging
 ```
 
+## Publishing a release (maintainers)
+
+1. Bump `CFBundleShortVersionString` in `Resources/Info.plist`.
+2. Run `make release` — this builds a universal app and creates
+   `LirikTouchBar-vX.Y.Z.zip`.
+3. On GitHub, go to **Releases → Draft a new release**, create tag `vX.Y.Z`,
+   attach the generated zip, and publish.
+4. Share the [installation tutorial](docs/INSTALL.md) with users.
+
 ## Contributing
 
-Issues and pull requests are welcome. Please keep changes on public Apple APIs
-and include a short note in your PR about how you tested on real Touch Bar
-hardware.
+Issues and pull requests are welcome. If you change the Touch Bar behavior,
+please test on real Touch Bar hardware (both Apple Silicon and Intel if
+possible) and note it in your PR. Be aware that `PrivateTouchBar.swift` uses
+undocumented APIs.
 
 ## License
 

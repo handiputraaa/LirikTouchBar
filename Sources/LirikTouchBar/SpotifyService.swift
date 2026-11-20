@@ -42,6 +42,18 @@ final class SpotifyService {
     end tell
     """
 
+    private static let nextScript = """
+    tell application "Spotify"
+        if running then next track
+    end tell
+    """
+
+    private static let previousScript = """
+    tell application "Spotify"
+        if running then previous track
+    end tell
+    """
+
     private let queue = DispatchQueue(label: "com.iseng.lirik.spotify", qos: .userInitiated)
 
     func fetchSnapshot() async -> SpotifySnapshot? {
@@ -59,11 +71,22 @@ final class SpotifyService {
     }
 
     func togglePlayback() {
-        let script = Self.toggleScript
-        queue.async { _ = Self.runAppleScript(script) }
+        run(Self.toggleScript)
+    }
+
+    func nextTrack() {
+        run(Self.nextScript)
+    }
+
+    func previousTrack() {
+        run(Self.previousScript)
     }
 
     // MARK: - Private
+
+    private func run(_ source: String) {
+        queue.async { _ = Self.runAppleScript(source) }
+    }
 
     private static func runAppleScript(_ source: String) -> String {
         let task = Process()

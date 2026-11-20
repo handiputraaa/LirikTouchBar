@@ -1,11 +1,9 @@
 .PHONY: build debug run install release clean
 
 build:
-	swift build -c release
 	./scripts/build-app.sh
 
 debug:
-	swift build
 	CONFIG=debug ./scripts/build-app.sh
 
 run:

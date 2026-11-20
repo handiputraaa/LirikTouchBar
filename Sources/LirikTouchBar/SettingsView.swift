@@ -29,12 +29,15 @@ struct SettingsView: View {
                         .frame(width: 34, alignment: .trailing)
                 }
                 Stepper("Visible lines: \(settings.lineCount)", value: $settings.lineCount, in: 1...3)
+                TextField("Text when no lyrics are found", text: $settings.fallbackText)
+                    .textFieldStyle(.roundedBorder)
             }
 
             Section("Menu bar") {
-                Toggle("Show current lyric in menu bar", isOn: $settings.showMenuBar)
-                TextField("Text when no lyrics are found", text: $settings.fallbackText)
-                    .textFieldStyle(.roundedBorder)
+                Toggle("Show menu bar icon", isOn: $settings.showMenuBar)
+                Text("Click the ♪ icon to open preferences, control playback, or hide the Touch Bar lyrics.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("General") {

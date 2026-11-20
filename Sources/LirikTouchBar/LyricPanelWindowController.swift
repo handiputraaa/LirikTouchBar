@@ -95,16 +95,12 @@ final class LyricPanelWindowController: NSWindowController, NSWindowDelegate {
     // MARK: - NSWindowDelegate
 
     func windowDidMiniaturize(_ notification: Notification) {
-        // A minimized window is no longer the key window, so its Touch Bar is
-        // dropped. Re-assert the application-level bar as the fallback.
-        DebugLog.write("Lyric Panel minimized — switching to application Touch Bar")
-        NSApp.touchBar = touchBarController.touchBar
-        touchBarController.update()
+        // Harmless now: the system-modal lyric bar is independent of this window.
+        DebugLog.write("Lyric Panel minimized — system Touch Bar stays active")
     }
 
     func windowDidDeminiaturize(_ notification: Notification) {
-        DebugLog.write("Lyric Panel restored — switching to window Touch Bar")
-        window?.touchBar = touchBarController.touchBar
+        DebugLog.write("Lyric Panel restored")
         touchBarController.update()
     }
 }

@@ -7,19 +7,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotKey = HotKeyManager.shared
     private let controller = LyricsController.shared
     private var settingsCancellable: AnyCancellable?
+    private var backgroundActivity: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Prevent App Nap from throttling sync timers while Lirik is in the background.
+        backgroundActivity = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated],
+            reason: "Keep Touch Bar lyrics in sync while Spotify plays"
+        )
+
         statusBar.setup()
         hotKey.register()
 
-        // Fallback Touch Bar for when no window is key (e.g. the Lyric Panel
-        // is minimized). The panel's window-level bar takes precedence while
-        // it is visible and focused.
-        NSApp.touchBar = TouchBarController.shared.touchBar
+        // System-modal Touch Bar: stays on the physical Touch Bar regardless
+        // of which app is frontmost or whether the panel is minimized.
+        SystemLyricsTouchBar.shared.install()
 
         controller.onUpdate = { [weak self] in
             TouchBarController.shared.update()
             self?.statusBar.update(title: LyricsController.shared.currentLine)
+            SystemLyricsTouchBar.shared.setText(LyricsController.shared.currentLine)
+            SystemLyricsTouchBar.shared.setPlaying(LyricsController.shared.isPlaying)
         }
         controller.start()
 
@@ -48,6 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         controller.stop()
         DistributedNotificationCenter.default().removeObserver(self)
+        if let backgroundActivity {
+            ProcessInfo.processInfo.endActivity(backgroundActivity)
+            self.backgroundActivity = nil
+        }
     }
 
     @objc private func spotifyPlaybackChanged(_ notification: Notification) {

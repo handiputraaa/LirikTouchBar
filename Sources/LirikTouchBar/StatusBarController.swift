@@ -1,11 +1,11 @@
 import AppKit
 
-/// The always-available menu bar item. Shows the current lyric as a fallback
-/// for macOS's restriction that only a frontmost app may draw to the Touch Bar.
+/// The menu-bar app icon. Clicking it opens the controls and preferences.
 @MainActor
-final class StatusBarController: NSObject {
+final class StatusBarController: NSObject, NSMenuDelegate {
     private var item: NSStatusItem?
     private let menu = NSMenu()
+    private var touchBarToggleItem: NSMenuItem?
 
     func setup() {
         buildMenu()
@@ -21,11 +21,11 @@ final class StatusBarController: NSObject {
         }
     }
 
-    @MainActor
+    /// The current lyric is no longer printed in the menu bar; it is shown as
+    /// a tooltip on the icon instead, keeping the top bar clean.
     func update(title: String) {
         guard let item else { return }
-        let trimmed = String(title.prefix(45))
-        item.button?.title = trimmed.isEmpty ? "♪" : trimmed
+        item.button?.toolTip = "Lirik — \(title)"
     }
 
     // MARK: - Private
@@ -33,14 +33,31 @@ final class StatusBarController: NSObject {
     private func ensureItem() {
         guard item == nil else { return }
         let newItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        let image = NSImage(systemSymbolName: "music.note",
+                            accessibilityDescription: "Lirik")
+        image?.isTemplate = true
+        newItem.button?.image = image
+        newItem.button?.title = ""
+        newItem.button?.toolTip = "Lirik — lyrics on Touch Bar"
+
         newItem.menu = menu
         item = newItem
-        update(title: LyricsController.shared.currentLine)
     }
 
     private func buildMenu() {
+        menu.delegate = self
+
         menu.addItem(withTitle: "Show Lyrics Panel", action: #selector(showPanel), keyEquivalent: "l")
             .target = self
+
+        let toggle = menu.addItem(withTitle: "Hide Touch Bar Lyrics",
+                                  action: #selector(toggleTouchBarLyrics),
+                                  keyEquivalent: "t")
+        toggle.target = self
+        touchBarToggleItem = toggle
+
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Play / Pause", action: #selector(togglePlayback), keyEquivalent: "p")
             .target = self
         menu.addItem(withTitle: "Refresh Lyrics", action: #selector(refreshLyrics), keyEquivalent: "r")
@@ -53,8 +70,22 @@ final class StatusBarController: NSObject {
             .target = self
     }
 
+    // MARK: - NSMenuDelegate
+
+    func menuWillOpen(_ menu: NSMenu) {
+        touchBarToggleItem?.title = SystemLyricsTouchBar.shared.isPresented
+            ? "Hide Touch Bar Lyrics"
+            : "Show Touch Bar Lyrics"
+    }
+
+    // MARK: - Actions
+
     @objc private func showPanel() {
         LyricPanelWindowController.shared.show()
+    }
+
+    @objc private func toggleTouchBarLyrics() {
+        SystemLyricsTouchBar.shared.toggle()
     }
 
     @objc private func togglePlayback() {
