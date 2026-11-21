@@ -26,6 +26,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.onWake = {
             SystemLyricsTouchBar.shared.refresh()
         }
+        controller.onTrackChange = {
+            DebugLog.write("Track changed — repainting system Touch Bar")
+            SystemLyricsTouchBar.shared.refresh()
+        }
 
         controller.onUpdate = { [weak self] in
             TouchBarController.shared.update()

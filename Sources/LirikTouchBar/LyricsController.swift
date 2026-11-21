@@ -22,6 +22,8 @@ final class LyricsController: ObservableObject {
     var onUpdate: (() -> Void)?
     /// Called when the user returns after idle, so the Touch Bar can repaint.
     var onWake: (() -> Void)?
+    /// Called when the playing track changes, so the Touch Bar fully refreshes.
+    var onTrackChange: (() -> Void)?
 
     private var wasIdle = false
     private var lastTickDate = Date()
@@ -90,7 +92,8 @@ final class LyricsController: ObservableObject {
         lastSnapshot = snapshot
 
         let uri = snapshot.track?.uri ?? ""
-        if uri != loadedURI {
+        let trackChanged = uri != loadedURI
+        if trackChanged {
             DebugLog.write("Track: \(snapshot.track?.name ?? "none") — \(snapshot.track?.artist ?? "") " +
                            "duration=\(snapshot.track?.duration ?? 0)s position=\(snapshot.position)s")
             loadedURI = uri
@@ -102,15 +105,17 @@ final class LyricsController: ObservableObject {
                 isFetching = true
                 statusMessage = "Looking up lyrics…"
                 onUpdate?()
+                DebugLog.write("Fetching lyrics for '\(track.name)'…")
                 let fetched = await LyricsService.shared.lyrics(for: track)
+                DebugLog.write("Fetch returned \(fetched.count) lines")
                 isFetching = false
-                DebugLog.write("Lyrics lookup '\(track.name)' -> \(fetched.count) lines")
                 // Ignore a result that arrived after the user changed tracks.
                 if loadedURI == uri { lyrics = fetched }
             }
         }
 
         apply(snapshot: snapshot)
+        if trackChanged { onTrackChange?() }
     }
 
     private func tick() {

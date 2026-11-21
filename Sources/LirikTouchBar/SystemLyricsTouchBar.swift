@@ -82,7 +82,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         guard isPresented else { return }
         touchBar = makeBar()
         PrivateTouchBar.present(touchBar, trayID: Self.trayID)
-        DebugLog.write("System Touch Bar repainted after idle")
+        DebugLog.write("System Touch Bar repainted")
     }
 
     func setText(_ text: String) {
