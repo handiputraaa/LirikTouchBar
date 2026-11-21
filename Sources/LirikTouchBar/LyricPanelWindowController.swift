@@ -93,8 +93,13 @@ final class LyricPanelWindowController: NSWindowController, NSWindowDelegate {
     @MainActor
     func show() {
         touchBarController.update()
+        NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    func hidePanel() {
+        window?.orderOut(nil)
     }
 
     // MARK: - NSWindowDelegate

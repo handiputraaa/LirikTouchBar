@@ -38,6 +38,9 @@ is minimized or hidden.
 - The system bar has the **current lyric on the left** and three transport
   buttons on the right: `backward`, `play/pause` (icon follows playback state),
   and `forward`. They control Spotify directly.
+- An **✕ button** at the right of the lyric bar hides Lirik: it minimizes the
+  bar, closes the panel and hides the app. Re-open from the ♪ menu bar icon
+  (**Show Lyrics Panel**) or the ♪ Control Strip button.
 - A **♪ button** is installed in the Touch Bar Control Strip. Tap it to hide or
   re-show the lyric bar. If it is missing, check
   System Settings → Keyboard → Touch Bar → **Show Control Strip**.

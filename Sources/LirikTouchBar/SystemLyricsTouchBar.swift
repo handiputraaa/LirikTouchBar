@@ -17,12 +17,14 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let previousID = NSTouchBarItem.Identifier("com.iseng.lirik.previous")
     private static let playID = NSTouchBarItem.Identifier("com.iseng.lirik.play")
     private static let nextID = NSTouchBarItem.Identifier("com.iseng.lirik.next")
+    private static let closeID = NSTouchBarItem.Identifier("com.iseng.lirik.close")
 
     private var touchBar = NSTouchBar()
     private let label = NSTextField(labelWithString: "♪ Lirik")
     private let previousButton = NSButton()
     private let playButton = NSButton()
     private let nextButton = NSButton()
+    private let closeButton = NSButton()
 
     private var trayItem: NSCustomTouchBarItem?
     private(set) var isPresented = false
@@ -48,6 +50,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Play", action: #selector(playTapped))
         configureButton(nextButton, symbol: "forward.fill",
                         description: "Next track", action: #selector(nextTapped))
+        configureButton(closeButton, symbol: "xmark.circle.fill",
+                        description: "Hide Lirik", action: #selector(closeTapped))
     }
 
     /// Call once at launch. Installs the Control Strip button and presents the bar.
@@ -60,11 +64,14 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
         PrivateTouchBar.addSystemTrayItem(item)
         PrivateTouchBar.setControlStripPresence(Self.trayID, visible: true)
-        PrivateTouchBar.showsCloseBoxWhenFrontMost(true)
+        // Disable Apple's close box — it cannot be intercepted, so our own
+        // X button (below) handles hiding the app instead.
+        PrivateTouchBar.showsCloseBoxWhenFrontMost(false)
         present()
     }
 
     func present() {
+        NSApp.unhide(nil)
         PrivateTouchBar.present(touchBar, trayID: Self.trayID)
         isPresented = true
         DebugLog.write("System Touch Bar presented")
@@ -125,6 +132,9 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         case Self.nextID:
             item = NSCustomTouchBarItem(identifier: identifier)
             item.view = nextButton
+        case Self.closeID:
+            item = NSCustomTouchBarItem(identifier: identifier)
+            item.view = closeButton
         default:
             return nil
         }
@@ -143,7 +153,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             .flexibleSpace,
             Self.previousID,
             Self.playID,
-            Self.nextID
+            Self.nextID,
+            Self.closeID
         ]
         // No principal item: that would center the lyric. Leaving it unset
         // keeps the lyric flush left, next to the close (X) box.
@@ -184,5 +195,12 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     @objc private func nextTapped() {
         SpotifyService.shared.nextTrack()
+    }
+
+    @objc private func closeTapped() {
+        DebugLog.write("Close tapped — hiding Lirik")
+        hide()
+        LyricPanelWindowController.shared.hidePanel()
+        NSApp.hide(nil)
     }
 }
