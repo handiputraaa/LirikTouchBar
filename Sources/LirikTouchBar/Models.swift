@@ -36,8 +36,11 @@ struct LyricLine: Codable, Equatable {
 struct LRCLIBResponse: Decodable {
     let id: Int?
     let name: String?
+    let trackName: String?
     let artist: String?
+    let artistName: String?
     let album: String?
+    let albumName: String?
     let duration: Double?
     let syncedLyrics: String?
     let plainLyrics: String?
