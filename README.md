@@ -111,6 +111,9 @@ GitHub Actions builds and uploads a zip artifact on every push and pull request.
   Automation, and make sure Spotify desktop is running.
 - **"No synced lyrics found"** — LRCLIB is community sourced; coverage varies
   by track. The configured fallback text is shown instead.
+- **Stale lyric after the Touch Bar sleeps** — Lirik detects when you return
+  from idle (keyboard/trackpad or system wake) and force-refreshes the bar.
+  If it still looks stuck, tap the ♪ Control Strip button once.
 - **Touch Bar shows function keys** — tap the ♪ Control Strip button, or check
   `~/Library/Logs/LirikTouchBar.log` for "System Touch Bar presented". If the
   private API was broken by a macOS update, use the floating Lyric Panel and

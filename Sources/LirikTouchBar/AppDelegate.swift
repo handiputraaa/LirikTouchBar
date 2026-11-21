@@ -23,6 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // of which app is frontmost or whether the panel is minimized.
         SystemLyricsTouchBar.shared.install()
 
+        controller.onWake = {
+            SystemLyricsTouchBar.shared.refresh()
+        }
+
         controller.onUpdate = { [weak self] in
             TouchBarController.shared.update()
             self?.statusBar.update(title: LyricsController.shared.currentLine)

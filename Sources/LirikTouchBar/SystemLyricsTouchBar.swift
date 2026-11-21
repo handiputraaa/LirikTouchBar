@@ -76,6 +76,15 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         DebugLog.write("System Touch Bar minimized")
     }
 
+    /// Force a one-time repaint after the Touch Bar wakes from idle.
+    /// Rebuilding here is fine because it happens only on wake, not per line.
+    func refresh() {
+        guard isPresented else { return }
+        touchBar = makeBar()
+        PrivateTouchBar.present(touchBar, trayID: Self.trayID)
+        DebugLog.write("System Touch Bar repainted after idle")
+    }
+
     func setText(_ text: String) {
         guard label.stringValue != text else { return }
         // Update only the label in place. Rebuilding or re-presenting the bar

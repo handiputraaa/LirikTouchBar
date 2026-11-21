@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreGraphics
 
 /// Keeps track of what Spotify is playing, loads matching lyrics, and computes
 /// which lyric line should currently be displayed.
@@ -19,7 +20,11 @@ final class LyricsController: ObservableObject {
 
     /// Called whenever any displayable value changes (Touch Bar, menu bar, panel).
     var onUpdate: (() -> Void)?
+    /// Called when the user returns after idle, so the Touch Bar can repaint.
+    var onWake: (() -> Void)?
 
+    private var wasIdle = false
+    private var lastTickDate = Date()
     private var pollTimer: Timer?
     private var tickTimer: Timer?
     private var settingsCancellable: AnyCancellable?
@@ -34,6 +39,7 @@ final class LyricsController: ObservableObject {
     // MARK: - Lifecycle
 
     func start() {
+        lastTickDate = Date()
         restartPollTimer()
 
         // A fast timer interpolates playback position between Spotify polls,
@@ -108,8 +114,40 @@ final class LyricsController: ObservableObject {
     }
 
     private func tick() {
+        let now = Date()
+        let tickGap = now.timeIntervalSince(lastTickDate)
+        lastTickDate = now
+
+        // Detect the transition from "user away" to "user just touched the
+        // keyboard/trackpad". CoreGraphics exposes this without extra permissions.
+        let idle = Self.idleSeconds()
+        var resumed = false
+        if idle > 5 {
+            wasIdle = true
+        } else if wasIdle && idle < 1.5 {
+            wasIdle = false
+            resumed = true
+        }
+
+        // A large timer gap also means the process was suspended (system sleep).
+        if resumed || tickGap > 2.0 {
+            DebugLog.write("Idle wake (idle=\(Int(idle))s, gap=\(Int(tickGap))s) — forcing lyric refresh")
+            onWake?()
+            Task { @MainActor in await self.poll(force: true) }
+        }
+
         guard let snapshot = lastSnapshot else { return }
         apply(snapshot: snapshot)
+    }
+
+    private static func idleSeconds() -> Double {
+        let keyboard = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState, eventType: .keyDown
+        )
+        let mouse = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState, eventType: .leftMouseDown
+        )
+        return min(keyboard, mouse)
     }
 
     // MARK: - Rendering
