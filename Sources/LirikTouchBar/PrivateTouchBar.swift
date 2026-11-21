@@ -52,9 +52,14 @@ enum PrivateTouchBar {
         _ = NSTouchBar.perform(selector, with: touchBar, with: trayID.rawValue as NSString)
     }
 
-    static func minimize(_ touchBar: NSTouchBar) {
-        let selector = NSSelectorFromString("minimizeSystemModalTouchBar:")
-        guard NSTouchBar.responds(to: selector) else { return }
+    /// Fully removes the system-modal bar so macOS shows the frontmost app's
+    /// own Touch Bar (emoji picker, media progress, etc.) again.
+    static func dismiss(_ touchBar: NSTouchBar) {
+        let selector = NSSelectorFromString("dismissSystemModalTouchBar:")
+        guard NSTouchBar.responds(to: selector) else {
+            DebugLog.write("PrivateTouchBar: dismissSystemModalTouchBar unavailable")
+            return
+        }
         _ = NSTouchBar.perform(selector, with: touchBar)
     }
 }

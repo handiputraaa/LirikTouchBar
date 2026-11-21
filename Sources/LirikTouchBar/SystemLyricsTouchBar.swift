@@ -78,9 +78,9 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     func hide() {
-        PrivateTouchBar.minimize(touchBar)
+        PrivateTouchBar.dismiss(touchBar)
         isPresented = false
-        DebugLog.write("System Touch Bar minimized")
+        DebugLog.write("System Touch Bar dismissed — frontmost app's bar restored")
     }
 
     /// Force a one-time repaint after the Touch Bar wakes from idle.
