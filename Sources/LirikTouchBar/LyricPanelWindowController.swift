@@ -41,7 +41,12 @@ struct LyricPanelView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("Press ⌥⌘L to focus this panel · Touch Bar is live while focused")
+                Button("Preferences…") {
+                    PreferencesWindowController.shared.show()
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
+                Text("⌥⌘L")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

@@ -27,6 +27,7 @@ final class LyricsController: ObservableObject {
 
     private var wasIdle = false
     private var lastTickDate = Date()
+    private var lastWakeDate = Date.distantPast
     private var pollTimer: Timer?
     private var tickTimer: Timer?
     private var settingsCancellable: AnyCancellable?
@@ -135,7 +136,10 @@ final class LyricsController: ObservableObject {
         }
 
         // A large timer gap also means the process was suspended (system sleep).
-        if resumed || tickGap > 2.0 {
+        // Throttle repaints — rebuilding the system bar too often makes the
+        // transport buttons appear to blink.
+        if (resumed || tickGap > 2.0) && now.timeIntervalSince(lastWakeDate) > 5 {
+            lastWakeDate = now
             DebugLog.write("Idle wake (idle=\(Int(idle))s, gap=\(Int(tickGap))s) — forcing lyric refresh")
             onWake?()
             Task { @MainActor in await self.poll(force: true) }
@@ -174,7 +178,9 @@ final class LyricsController: ObservableObject {
             currentLine = AppSettings.shared.fallbackText
             upcomingLine = ""
             secondUpcomingLine = ""
-            if snapshot.track != nil && !isFetching {
+            if snapshot.track == nil {
+                statusMessage = "Waiting for Spotify…"
+            } else if !isFetching {
                 statusMessage = "No synced lyrics found"
             }
         } else {

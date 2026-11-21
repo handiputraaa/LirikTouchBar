@@ -58,7 +58,11 @@ enum LRCParser {
                 }
                 text = text.trimmingCharacters(in: .whitespaces)
 
-                if !text.isEmpty {
+                // Skip marker-only lines such as "♪" that some LRC files use.
+                let hasContent = text.unicodeScalars.contains {
+                    CharacterSet.alphanumerics.contains($0)
+                }
+                if hasContent {
                     lines.append(LyricLine(time: time, text: text))
                 }
             }
@@ -79,7 +83,7 @@ final class LyricsService {
         )[0]
         return appSupport
             .appendingPathComponent("LirikTouchBar", isDirectory: true)
-            .appendingPathComponent("lyrics-cache.json")
+            .appendingPathComponent("lyrics-cache-v2.json")
     }()
 
     private struct CacheEntry: Codable {
@@ -148,7 +152,10 @@ final class LyricsService {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { return [] }
             let results = try JSONDecoder().decode([LRCLIBResponse].self, from: data)
-            guard let best = results.max(by: { Self.score($0, for: track) < Self.score($1, for: track) })
+            // Never accept a result from a different artist — otherwise a song
+            // like "Master of Puppets" by Green Day gets Metallica's lyrics.
+            let candidates = results.filter { Self.artistMatches($0, for: track) }
+            guard let best = candidates.max(by: { Self.score($0, for: track) < Self.score($1, for: track) })
             else { return [] }
             DebugLog.write("LRCLIB search fallback picked '\(best.trackName ?? best.name ?? "?")'")
             return Self.lines(from: best)
@@ -173,16 +180,24 @@ final class LyricsService {
 
     /// Picks the result closest to the playing track by title, artist, duration
     /// and whether synchronized lyrics are available.
+    private static func normalized(_ value: String) -> String {
+        value.lowercased().replacingOccurrences(
+            of: "[^a-z0-9]", with: "", options: .regularExpression
+        )
+    }
+
+    private static func artistMatches(_ result: LRCLIBResponse, for track: Track) -> Bool {
+        let actual = normalized(result.artistName ?? result.artist ?? "")
+        let expected = normalized(track.artist)
+        guard !actual.isEmpty, !expected.isEmpty else { return false }
+        return actual == expected || actual.contains(expected) || expected.contains(actual)
+    }
+
     private static func score(_ result: LRCLIBResponse, for track: Track) -> Int {
-        let normalize: (String) -> String = { value in
-            value.lowercased().replacingOccurrences(
-                of: "[^a-z0-9]", with: "", options: .regularExpression
-            )
-        }
-        let resultName = normalize(result.trackName ?? result.name ?? "")
-        let wantedName = normalize(track.name)
-        let resultArtist = normalize(result.artistName ?? "")
-        let wantedArtist = normalize(track.artist)
+        let resultName = normalized(result.trackName ?? result.name ?? "")
+        let wantedName = normalized(track.name)
+        let resultArtist = normalized(result.artistName ?? "")
+        let wantedArtist = normalized(track.artist)
 
         var score = 0
         if resultName == wantedName { score += 100 }
