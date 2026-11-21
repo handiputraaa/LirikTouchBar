@@ -33,7 +33,7 @@ final class LyricsController: ObservableObject {
     private var settingsCancellable: AnyCancellable?
     private var lastSnapshot: SpotifySnapshot?
     private var lyrics: [LyricLine] = []
-    private var loadedURI: String = ""
+    private var loadedTrackKey: String = ""
     private var isFetching = false
     private var lastDisplayedLine = ""
 
@@ -92,12 +92,18 @@ final class LyricsController: ObservableObject {
         }
         lastSnapshot = snapshot
 
-        let uri = snapshot.track?.uri ?? ""
-        let trackChanged = uri != loadedURI
+        // Spotify can briefly report the new URI with the OLD title/artist
+        // during a transition. Keying on all three avoids missing that change.
+        let key = [
+            snapshot.track?.uri ?? "",
+            snapshot.track?.name ?? "",
+            snapshot.track?.artist ?? ""
+        ].joined(separator: "|")
+        let trackChanged = key != loadedTrackKey
         if trackChanged {
             DebugLog.write("Track: \(snapshot.track?.name ?? "none") — \(snapshot.track?.artist ?? "") " +
                            "duration=\(snapshot.track?.duration ?? 0)s position=\(snapshot.position)s")
-            loadedURI = uri
+            loadedTrackKey = key
             lyrics = []
             upcomingLine = ""
             secondUpcomingLine = ""
@@ -111,7 +117,7 @@ final class LyricsController: ObservableObject {
                 DebugLog.write("Fetch returned \(fetched.count) lines")
                 isFetching = false
                 // Ignore a result that arrived after the user changed tracks.
-                if loadedURI == uri { lyrics = fetched }
+                if loadedTrackKey == key { lyrics = fetched }
             }
         }
 

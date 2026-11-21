@@ -83,7 +83,7 @@ final class LyricsService {
         )[0]
         return appSupport
             .appendingPathComponent("LirikTouchBar", isDirectory: true)
-            .appendingPathComponent("lyrics-cache-v2.json")
+            .appendingPathComponent("lyrics-cache-v3.json")
     }()
 
     private struct CacheEntry: Codable {
@@ -104,8 +104,10 @@ final class LyricsService {
         // 2. Spotify and LRCLIB often disagree on album names — retry without it.
         if lines.isEmpty { lines = await lookup(track, includeAlbum: false) }
 
-        // 3. Last resort: search and pick the closest matching track.
+        // 3. Last resort: search, then retry with a cleaned-up title for
+        //    tracks carrying "(Remastered)", "(Live)" etc.
         if lines.isEmpty { lines = await search(track) }
+        if lines.isEmpty { lines = await search(track, cleanedTitle: true) }
 
         if !lines.isEmpty {
             cache[key] = lines
@@ -138,13 +140,14 @@ final class LyricsService {
         components.queryItems = items
         guard let request = makeRequest(components.url),
               let response = await decode(request) else { return [] }
-        return Self.lines(from: response)
+        return Self.lines(from: response, duration: track.duration)
     }
 
-    private func search(_ track: Track) async -> [LyricLine] {
+    private func search(_ track: Track, cleanedTitle: Bool = false) async -> [LyricLine] {
         guard var components = URLComponents(string: "https://lrclib.net/api/search") else { return [] }
+        let title = cleanedTitle ? Self.cleanTitle(track.name) : track.name
         components.queryItems = [
-            URLQueryItem(name: "q", value: "\(track.name) \(track.artist)")
+            URLQueryItem(name: "q", value: "\(title) \(track.artist)")
         ]
         guard let request = makeRequest(components.url) else { return [] }
 
@@ -158,7 +161,7 @@ final class LyricsService {
             guard let best = candidates.max(by: { Self.score($0, for: track) < Self.score($1, for: track) })
             else { return [] }
             DebugLog.write("LRCLIB search fallback picked '\(best.trackName ?? best.name ?? "?")'")
-            return Self.lines(from: best)
+            return Self.lines(from: best, duration: track.duration)
         } catch {
             return []
         }
@@ -174,12 +177,53 @@ final class LyricsService {
         }
     }
 
-    private static func lines(from response: LRCLIBResponse) -> [LyricLine] {
-        LRCParser.parse(response.syncedLyrics ?? response.plainLyrics ?? "")
+    private static func lines(from response: LRCLIBResponse,
+                              duration: TimeInterval) -> [LyricLine] {
+        // Prefer real timestamps.
+        if let synced = response.syncedLyrics, !synced.isEmpty {
+            let parsed = LRCParser.parse(synced)
+            if !parsed.isEmpty { return parsed }
+        }
+
+        // Many LRCLIB entries only have plain lyrics. Distribute them evenly
+        // across the track so the bar still shows something useful.
+        if let plain = response.plainLyrics, !plain.isEmpty {
+            return estimatedLines(from: plain, duration: duration)
+        }
+        return []
+    }
+
+    private static func estimatedLines(from plain: String,
+                                       duration: TimeInterval) -> [LyricLine] {
+        let texts = plain.split(separator: "\n")
+            .map { String($0).trimmingCharacters(in: .whitespaces) }
+            .filter {
+                !$0.isEmpty &&
+                $0.unicodeScalars.contains { CharacterSet.alphanumerics.contains($0) }
+            }
+        guard !texts.isEmpty, duration > 0 else { return [] }
+
+        let step = duration / Double(texts.count)
+        return texts.enumerated().map {
+            LyricLine(time: Double($0.offset) * step, text: $0.element)
+        }
     }
 
     /// Picks the result closest to the playing track by title, artist, duration
     /// and whether synchronized lyrics are available.
+    /// Strips common release annotations so searches still find the base song.
+    private static func cleanTitle(_ name: String) -> String {
+        var result = name
+        let markers = ["(remastered", "(remaster", "(live", "(acoustic",
+                       "(explicit", "[live", "[remastered", "- remastered"]
+        for marker in markers {
+            if let range = result.range(of: marker, options: .caseInsensitive) {
+                result = String(result[..<range.lowerBound])
+            }
+        }
+        return result.trimmingCharacters(in: .whitespaces)
+    }
+
     private static func normalized(_ value: String) -> String {
         value.lowercased().replacingOccurrences(
             of: "[^a-z0-9]", with: "", options: .regularExpression
