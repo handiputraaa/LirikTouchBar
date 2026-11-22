@@ -358,6 +358,11 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         present()
     }
 
+    /// Restores the lyric bar after another window (e.g. All Apps) is dismissed.
+    func showLyricsFromAppGrid() {
+        showLyrics()
+    }
+
     /// Called when the Fn / Globe key is pressed while the lyric bar is active.
     func showFunctionKeys() {
         guard isPresented else { return }

@@ -107,7 +107,7 @@ struct AppGridView: View {
     }
 }
 
-final class AppGridWindowController: NSWindowController {
+final class AppGridWindowController: NSWindowController, NSWindowDelegate {
     static let shared = AppGridWindowController()
 
     private init() {
@@ -121,6 +121,7 @@ final class AppGridWindowController: NSWindowController {
         window.center()
         window.isReleasedWhenClosed = false
         super.init(window: window)
+        window.delegate = self
         window.contentViewController = NSHostingController(rootView: AppGridView())
     }
 
@@ -133,5 +134,20 @@ final class AppGridWindowController: NSWindowController {
 
     func closeWindow() {
         window?.orderOut(nil)
+        restoreLyricBar()
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        restoreLyricBar()
+        return true
+    }
+
+    private func restoreLyricBar() {
+        Task { @MainActor in
+            DebugLog.write("App grid closed — restoring lyric Touch Bar")
+            SystemLyricsTouchBar.shared.showLyricsFromAppGrid()
+        }
     }
 }
