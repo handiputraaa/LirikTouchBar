@@ -37,7 +37,7 @@ is minimized or hidden.
 
 - The system bar has the **current lyric on the left** and transport buttons on
   the right: `previous track`, `back 15s`, `play/pause` (icon follows playback
-  state), `forward 15s`, `next track`, plus the controls and close buttons.
+  state), `forward 15s`, `next track`, plus the controls button.
   All of them control Spotify directly.
 - A **slider button** switches the bar to labeled system controls: **display
   brightness (☀), volume (🔊), keyboard backlight (⌨), and mute** (because the
@@ -58,11 +58,8 @@ is minimized or hidden.
     pane. Enable LirikTouchBar there, then switch back to the app; it re-checks
     on activation. Check the log for `Fn global monitor installed` and
     `Fn key pressed` to confirm it's working.
-- An **✕ button** at the right of the bar **dismisses** the system Touch Bar so
-  macOS shows the frontmost app's own bar again (emoji picker when typing,
-  media progress in YouTube/Safari, etc.). It also hides the Lyric Panel and
-  the app. Re-open from the ♪ menu bar icon (**Show Lyrics Panel**) or the ♪
-  Control Strip button.
+- To quit Lirik, use the ♪ menu bar icon → **Quit Lirik** (or `⌘Q` from the
+  laptop screen). There is no close button on the Touch Bar itself.
 - A **♪ button** is installed in the Touch Bar Control Strip. Tap it to hide or
   re-show the lyric bar. If it is missing, check
   System Settings → Keyboard → Touch Bar → **Show Control Strip**.

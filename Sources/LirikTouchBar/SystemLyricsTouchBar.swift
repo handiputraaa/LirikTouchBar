@@ -21,7 +21,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let seekBackID = NSTouchBarItem.Identifier("com.iseng.lirik.seekback")
     private static let seekForwardID = NSTouchBarItem.Identifier("com.iseng.lirik.seekforward")
     private static let controlsID = NSTouchBarItem.Identifier("com.iseng.lirik.controls")
-    private static let closeID = NSTouchBarItem.Identifier("com.iseng.lirik.close")
     private static let brightnessID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness")
     private static let volumeID = NSTouchBarItem.Identifier("com.iseng.lirik.volume")
     private static let muteID = NSTouchBarItem.Identifier("com.iseng.lirik.mute")
@@ -46,7 +45,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private let seekBackButton = NSButton()
     private let seekForwardButton = NSButton()
     private let controlsButton = NSButton()
-    private let closeButton = NSButton()
 
     private let brightnessSlider = NSSlider()
     private let volumeSlider = NSSlider()
@@ -93,8 +91,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Forward 15 seconds", action: #selector(seekForwardTapped))
         configureButton(controlsButton, symbol: "slider.horizontal.3",
                         description: "System controls", action: #selector(showSystemControls))
-        configureButton(closeButton, symbol: "xmark.circle.fill",
-                        description: "Hide Lirik", action: #selector(closeTapped))
         configureButton(muteButton, symbol: "speaker.fill",
                         description: "Mute", action: #selector(muteTapped))
         configureButton(nativeButton, symbol: "command",
@@ -210,8 +206,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             item = NSCustomTouchBarItem(identifier: identifier); item.view = seekForwardButton
         case Self.controlsID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = controlsButton
-        case Self.closeID:
-            item = NSCustomTouchBarItem(identifier: identifier); item.view = closeButton
         case Self.brightnessID:
             item = NSCustomTouchBarItem(identifier: identifier)
             item.view = controlView(symbol: "sun.max.fill", slider: brightnessSlider)
@@ -259,7 +253,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                 Self.lyricID, .flexibleSpace,
                 Self.previousID, Self.seekBackID, Self.playID,
                 Self.seekForwardID, Self.nextID,
-                Self.controlsID, Self.closeID
+                Self.controlsID
             ]
         case .controls:
             bar.defaultItemIdentifiers = [
@@ -334,13 +328,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     @objc private func nextTapped() { SpotifyService.shared.nextTrack() }
     @objc private func seekBackTapped() { SpotifyService.shared.seek(by: -15) }
     @objc private func seekForwardTapped() { SpotifyService.shared.seek(by: 15) }
-
-    @objc private func closeTapped() {
-        DebugLog.write("Close tapped — hiding Lirik")
-        hide()
-        LyricPanelWindowController.shared.hidePanel()
-        NSApp.hide(nil)
-    }
 
     @objc private func showSystemControls() {
         mode = .controls
