@@ -45,13 +45,30 @@ enum PrivateTouchBar {
     }
 
     /// Presents a system-level bar that remains visible across all apps.
+    /// Uses the `placement:` variant with value 1, which renders the bar full
+    /// width WITHOUT Apple's X close box on the left.
     static func present(_ touchBar: NSTouchBar, trayID: NSTouchBarItem.Identifier) {
-        let selector = NSSelectorFromString("presentSystemModalTouchBar:systemTrayItemIdentifier:")
-        guard NSTouchBar.responds(to: selector) else {
+        let placementSelector = NSSelectorFromString(
+            "presentSystemModalTouchBar:placement:systemTrayItemIdentifier:"
+        )
+        if NSTouchBar.responds(to: placementSelector),
+           let implementation = (NSTouchBar.self as AnyObject).method(for: placementSelector) {
+            typealias Function = @convention(c) (
+                AnyObject, Selector, NSTouchBar, Int64, NSString
+            ) -> Void
+            unsafeBitCast(implementation, to: Function.self)(
+                NSTouchBar.self, placementSelector, touchBar, 1,
+                trayID.rawValue as NSString
+            )
+            return
+        }
+
+        let fallback = NSSelectorFromString("presentSystemModalTouchBar:systemTrayItemIdentifier:")
+        guard NSTouchBar.responds(to: fallback) else {
             DebugLog.write("PrivateTouchBar: presentSystemModalTouchBar unavailable")
             return
         }
-        _ = NSTouchBar.perform(selector, with: touchBar, with: trayID.rawValue as NSString)
+        _ = NSTouchBar.perform(fallback, with: touchBar, with: trayID.rawValue as NSString)
     }
 
     /// Fully removes the system-modal bar so macOS shows the frontmost app's
