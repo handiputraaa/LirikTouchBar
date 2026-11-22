@@ -34,6 +34,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let volumeUpID = NSTouchBarItem.Identifier("com.iseng.lirik.volume.up")
     private static let keyboardDownID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard.down")
     private static let keyboardUpID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard.up")
+    private static let launchpadID = NSTouchBarItem.Identifier("com.iseng.lirik.launchpad")
 
     private var touchBar = NSTouchBar()
     private var mode: Mode = .lyrics
@@ -60,6 +61,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private let volumeUpButton = NSButton()
     private let keyboardDownButton = NSButton()
     private let keyboardUpButton = NSButton()
+    private let launchpadButton = NSButton()
 
     private var trayItem: NSCustomTouchBarItem?
     private var autoReturnTimer: Timer?
@@ -119,6 +121,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         let keyboardBright = KeyboardLightIcon.image(increase: true)
         keyboardBright.size = NSSize(width: 40, height: 40)
         keyboardUpButton.image = keyboardBright
+        configureButton(launchpadButton, symbol: "square.grid.2x2.fill", width: 52,
+                        description: "Launchpad", action: #selector(launchpadTapped))
         keyboardUpButton.imageScaling = .scaleProportionallyUpOrDown
 
         configureSlider(brightnessSlider, action: #selector(brightnessChanged))
@@ -236,6 +240,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             item = NSCustomTouchBarItem(identifier: identifier); item.view = keyboardDownButton
         case Self.keyboardUpID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = keyboardUpButton
+        case Self.launchpadID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = launchpadButton
         default:
             return nil
         }
@@ -264,7 +270,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             bar.defaultItemIdentifiers = [
                 Self.brightnessDownID, Self.brightnessUpID,
                 Self.volumeDownID, Self.volumeUpID,
-                Self.keyboardDownID, Self.keyboardUpID
+                Self.keyboardDownID, Self.keyboardUpID, Self.launchpadID
             ]
         }
         bar.principalItemIdentifier = nil
@@ -443,6 +449,12 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     @objc private func keyboardUp() {
         step(SystemControls.keyboardBrightness, by: 0.125) { SystemControls.keyboardBrightness = $0 }
+    }
+
+    @objc private func launchpadTapped() {
+        let url = URL(fileURLWithPath: "/System/Applications/Launchpad.app")
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        showLyrics()
     }
 
     @objc private func muteTapped() {
