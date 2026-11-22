@@ -45,15 +45,19 @@ is minimized or hidden.
   ~6 seconds, or tap the ♪ button to go back.
 - A **command button** in that mode temporarily reveals the **native Touch Bar**
   (all system functions) for 15 seconds, then restores the lyrics.
-- Pressing **Fn / 🌐** while the lyric bar is active swaps it for a macOS-style
-  row: `sun.min / sun.max` (display brightness), `speaker / speaker.wave` (volume),
-  and `keyboard / keyboard.fill` (keyboard backlight). Each press adjusts in
-  steps; the row returns to lyrics after ~3 seconds.
-  - **One-time setup:** macOS consumes Fn before normal hotkeys, so Lirik needs
-    **Accessibility** access to detect it. Approve the prompt on first launch,
-    or add LirikTouchBar under **System Settings → Privacy & Security →
-    Accessibility** and enable it. The app re-checks whenever it becomes active.
-    If you'd rather not grant this, use the slider button for the same controls.
+- **Two ways to reach the same controls:**
+  1. **Slider button** on the lyric bar — no permission needed; shows labeled
+     sliders for display brightness, volume, keyboard backlight and mute.
+  2. **Fn / 🌐 key** — swaps the bar for a macOS-style step-control row
+     (`sun.min / sun.max`, `speaker / speaker.wave`, `keyboard` outline/filled).
+     Each tap adjusts in steps; it returns to lyrics after ~3 seconds.
+     You can also trigger the same row from the ♪ menu → **System Controls (Fn)**.
+  - **One-time setup for Fn:** macOS handles the globe key before normal hotkeys,
+    so Lirik needs **Accessibility** access to see it. Choose ♪ menu →
+    **Enable Fn Key…** — this prompts for access and opens the correct Settings
+    pane. Enable LirikTouchBar there, then switch back to the app; it re-checks
+    on activation. Check the log for `Fn global monitor installed` and
+    `Fn key pressed` to confirm it's working.
 - An **✕ button** at the right of the bar **dismisses** the system Touch Bar so
   macOS shows the frontmost app's own bar again (emoji picker when typing,
   media progress in YouTube/Safari, etc.). It also hides the Lyric Panel and

@@ -62,6 +62,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             .target = self
         menu.addItem(withTitle: "Refresh Lyrics", action: #selector(refreshLyrics), keyEquivalent: "r")
             .target = self
+        menu.addItem(withTitle: "System Controls (Fn)", action: #selector(showFnControls), keyEquivalent: "f")
+            .target = self
+        menu.addItem(withTitle: "Enable Fn Key…", action: #selector(enableFnKey), keyEquivalent: "")
+            .target = self
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Preferences…", action: #selector(openPreferences), keyEquivalent: ",")
             .target = self
@@ -94,6 +98,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func refreshLyrics() {
         Task { @MainActor in await LyricsController.shared.refresh() }
+    }
+
+    @objc private func showFnControls() {
+        SystemLyricsTouchBar.shared.showFunctionKeys()
+    }
+
+    @objc private func enableFnKey() {
+        FunctionKeyMonitor.shared.requestAccessibility()
     }
 
     @objc private func openPreferences() {

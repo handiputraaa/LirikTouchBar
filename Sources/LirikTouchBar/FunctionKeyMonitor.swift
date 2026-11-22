@@ -25,6 +25,22 @@ final class FunctionKeyMonitor {
         registerGlobalMonitor()
     }
 
+    /// Prompts for Accessibility and, once granted, starts the monitor and
+    /// opens the relevant System Settings pane for manual approval.
+    func requestAccessibility() {
+        _ = isTrusted
+        if isTrusted {
+            registerGlobalMonitor()
+            DebugLog.write("Accessibility granted — Fn monitor active")
+        } else {
+            if let url = URL(string:
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+            DebugLog.write("Opening Accessibility settings for Fn key")
+        }
+    }
+
     // MARK: - Accessibility
 
     private var isTrusted: Bool {
