@@ -45,6 +45,11 @@ is minimized or hidden.
   ~6 seconds, or tap the ♪ button to go back.
 - A **command button** in that mode temporarily reveals the **native Touch Bar**
   (all system functions) for 15 seconds, then restores the lyrics.
+- Pressing **Fn / 🌐** while the lyric bar is active swaps it for a macOS-style
+  row: `sun.min / sun.max` (display brightness), `speaker / speaker.wave` (volume),
+  and `keyboard / keyboard.fill` (keyboard backlight). Each press adjusts in
+  steps; the row returns to lyrics after ~3 seconds. No Accessibility permission
+  is needed — this uses a Carbon hotkey.
 - An **✕ button** at the right of the bar **dismisses** the system Touch Bar so
   macOS shows the frontmost app's own bar again (emoji picker when typing,
   media progress in YouTube/Safari, etc.). It also hides the Lyric Panel and

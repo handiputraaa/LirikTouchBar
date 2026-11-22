@@ -6,7 +6,7 @@ import AppKit
 final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     static let shared = SystemLyricsTouchBar()
 
-    private enum Mode { case lyrics, controls }
+    private enum Mode { case lyrics, controls, functionKeys }
 
     /// Usable lyric width after the transport buttons.
     private static let maxWidth: CGFloat = 440
@@ -28,6 +28,12 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let keyboardID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard")
     private static let nativeID = NSTouchBarItem.Identifier("com.iseng.lirik.native")
     private static let backID = NSTouchBarItem.Identifier("com.iseng.lirik.back")
+    private static let brightnessDownID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness.down")
+    private static let brightnessUpID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness.up")
+    private static let volumeDownID = NSTouchBarItem.Identifier("com.iseng.lirik.volume.down")
+    private static let volumeUpID = NSTouchBarItem.Identifier("com.iseng.lirik.volume.up")
+    private static let keyboardDownID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard.down")
+    private static let keyboardUpID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard.up")
 
     private var touchBar = NSTouchBar()
     private var mode: Mode = .lyrics
@@ -47,6 +53,13 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private let muteButton = NSButton()
     private let nativeButton = NSButton()
     private let backButton = NSButton()
+
+    private let brightnessDownButton = NSButton()
+    private let brightnessUpButton = NSButton()
+    private let volumeDownButton = NSButton()
+    private let volumeUpButton = NSButton()
+    private let keyboardDownButton = NSButton()
+    private let keyboardUpButton = NSButton()
 
     private var trayItem: NSCustomTouchBarItem?
     private var autoReturnTimer: Timer?
@@ -86,6 +99,19 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Show native Touch Bar", action: #selector(nativeTapped))
         configureButton(backButton, symbol: "music.note",
                         description: "Back to lyrics", action: #selector(showLyrics))
+
+        configureButton(brightnessDownButton, symbol: "sun.min.fill", width: 52,
+                        description: "Decrease brightness", action: #selector(brightnessDown))
+        configureButton(brightnessUpButton, symbol: "sun.max.fill", width: 52,
+                        description: "Increase brightness", action: #selector(brightnessUp))
+        configureButton(volumeDownButton, symbol: "speaker.wave.1.fill", width: 52,
+                        description: "Decrease volume", action: #selector(volumeDown))
+        configureButton(volumeUpButton, symbol: "speaker.wave.3.fill", width: 52,
+                        description: "Increase volume", action: #selector(volumeUp))
+        configureButton(keyboardDownButton, symbol: "keyboard", width: 52,
+                        description: "Decrease keyboard light", action: #selector(keyboardDown))
+        configureButton(keyboardUpButton, symbol: "keyboard.fill", width: 52,
+                        description: "Increase keyboard light", action: #selector(keyboardUp))
 
         configureSlider(brightnessSlider, action: #selector(brightnessChanged))
         configureSlider(volumeSlider, action: #selector(volumeChanged))
@@ -189,6 +215,18 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             item = NSCustomTouchBarItem(identifier: identifier); item.view = nativeButton
         case Self.backID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = backButton
+        case Self.brightnessDownID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = brightnessDownButton
+        case Self.brightnessUpID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = brightnessUpButton
+        case Self.volumeDownID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = volumeDownButton
+        case Self.volumeUpID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = volumeUpButton
+        case Self.keyboardDownID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = keyboardDownButton
+        case Self.keyboardUpID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = keyboardUpButton
         default:
             return nil
         }
@@ -212,6 +250,12 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             bar.defaultItemIdentifiers = [
                 Self.brightnessID, Self.volumeID, Self.keyboardID, Self.muteID,
                 .flexibleSpace, Self.nativeID, Self.backID
+            ]
+        case .functionKeys:
+            bar.defaultItemIdentifiers = [
+                Self.brightnessDownID, Self.brightnessUpID,
+                Self.volumeDownID, Self.volumeUpID,
+                Self.keyboardDownID, Self.keyboardUpID
             ]
         }
         bar.principalItemIdentifier = nil
@@ -297,6 +341,19 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         present()
     }
 
+    /// Called when the Fn / Globe key is pressed while the lyric bar is active.
+    func showFunctionKeys() {
+        guard isPresented else { return }
+        mode = .functionKeys
+        touchBar = makeBar()
+        present()
+        // Fn is a hold-style key on macOS; return to lyrics shortly after.
+        autoReturnTimer?.invalidate()
+        autoReturnTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.showLyrics() }
+        }
+    }
+
     private func scheduleAutoReturn() {
         autoReturnTimer?.invalidate()
         autoReturnTimer = Timer.scheduledTimer(withTimeInterval: 6, repeats: false) { [weak self] _ in
@@ -337,6 +394,44 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     @objc private func keyboardChanged(_ sender: NSSlider) {
         SystemControls.keyboardBrightness = Float(sender.doubleValue)
         scheduleAutoReturn()
+    }
+
+    // MARK: Fn-key step controls
+
+    private func step(_ current: Float?, by delta: Float,
+                      apply: (Float) -> Void) {
+        let base = current ?? 0.5
+        apply(min(1, max(0, base + delta)))
+        refreshSystemControlValues()
+        // Keep the Fn row visible while the user is tapping it.
+        if mode == .functionKeys { showFunctionKeys() }
+    }
+
+    @objc private func brightnessDown() {
+        step(SystemControls.brightness, by: -0.0625) { SystemControls.brightness = $0 }
+    }
+
+    @objc private func brightnessUp() {
+        step(SystemControls.brightness, by: 0.0625) { SystemControls.brightness = $0 }
+    }
+
+    @objc private func volumeDown() {
+        step(SystemControls.volume, by: -0.0625) { SystemControls.volume = $0 }
+    }
+
+    @objc private func volumeUp() {
+        step(SystemControls.volume, by: 0.0625) {
+            SystemControls.volume = $0
+            if $0 > 0, SystemControls.isMuted { SystemControls.isMuted = false }
+        }
+    }
+
+    @objc private func keyboardDown() {
+        step(SystemControls.keyboardBrightness, by: -0.125) { SystemControls.keyboardBrightness = $0 }
+    }
+
+    @objc private func keyboardUp() {
+        step(SystemControls.keyboardBrightness, by: 0.125) { SystemControls.keyboardBrightness = $0 }
     }
 
     @objc private func muteTapped() {

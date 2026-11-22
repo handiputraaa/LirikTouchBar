@@ -5,6 +5,7 @@ import Combine
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusBar = StatusBarController()
     private let hotKey = HotKeyManager.shared
+    private let functionKey = FunctionKeyMonitor.shared
     private let controller = LyricsController.shared
     private var settingsCancellable: AnyCancellable?
     private var backgroundActivity: NSObjectProtocol?
@@ -18,6 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusBar.setup()
         hotKey.register()
+        functionKey.register()
+        functionKey.onFunctionKey = {
+            SystemLyricsTouchBar.shared.showFunctionKeys()
+        }
 
         // System-modal Touch Bar: stays on the physical Touch Bar regardless
         // of which app is frontmost or whether the panel is minimized.
