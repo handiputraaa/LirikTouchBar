@@ -1,13 +1,14 @@
 import AppKit
 
 /// The always-visible, system-modal lyric bar on the physical Touch Bar.
-/// Layout: lyric text on the left, transport controls on the right.
-/// It is independent of which app is focused, and can be toggled from the
-/// ♪ button in the Control Strip.
+/// Two modes: lyrics (with transport controls) and system controls
+/// (brightness / volume), since the full-width presentation hides Control Strip.
 final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     static let shared = SystemLyricsTouchBar()
 
-    /// Usable lyric width after the close box and three transport buttons.
+    private enum Mode { case lyrics, controls }
+
+    /// Usable lyric width after the transport buttons.
     private static let maxWidth: CGFloat = 560
     private static let maxFontSize: CGFloat = 16
     private static let minFontSize: CGFloat = 9
@@ -17,22 +18,36 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let previousID = NSTouchBarItem.Identifier("com.iseng.lirik.previous")
     private static let playID = NSTouchBarItem.Identifier("com.iseng.lirik.play")
     private static let nextID = NSTouchBarItem.Identifier("com.iseng.lirik.next")
+    private static let controlsID = NSTouchBarItem.Identifier("com.iseng.lirik.controls")
     private static let closeID = NSTouchBarItem.Identifier("com.iseng.lirik.close")
+    private static let brightnessID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness")
+    private static let volumeID = NSTouchBarItem.Identifier("com.iseng.lirik.volume")
+    private static let muteID = NSTouchBarItem.Identifier("com.iseng.lirik.mute")
+    private static let backID = NSTouchBarItem.Identifier("com.iseng.lirik.back")
 
     private var touchBar = NSTouchBar()
+    private var mode: Mode = .lyrics
+
     private let label = NSTextField(labelWithString: "♪ Lirik")
     private let previousButton = NSButton()
     private let playButton = NSButton()
     private let nextButton = NSButton()
+    private let controlsButton = NSButton()
     private let closeButton = NSButton()
 
+    private let brightnessSlider = NSSlider()
+    private let volumeSlider = NSSlider()
+    private let muteButton = NSButton()
+    private let backButton = NSButton()
+
     private var trayItem: NSCustomTouchBarItem?
+    private var autoReturnTimer: Timer?
     private(set) var isPresented = false
     private var cachedPlayingState: Bool?
+    private var cachedMutedState: Bool?
 
     private override init() {
         super.init()
-
         touchBar = makeBar()
 
         label.alignment = .left
@@ -41,7 +56,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         label.font = .systemFont(ofSize: 15, weight: .medium)
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
-        // Leave room for the three transport buttons on a 13" Touch Bar.
         label.widthAnchor.constraint(lessThanOrEqualToConstant: 660).isActive = true
 
         configureButton(previousButton, symbol: "backward.fill",
@@ -50,8 +64,17 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Play", action: #selector(playTapped))
         configureButton(nextButton, symbol: "forward.fill",
                         description: "Next track", action: #selector(nextTapped))
+        configureButton(controlsButton, symbol: "slider.horizontal.3",
+                        description: "System controls", action: #selector(showSystemControls))
         configureButton(closeButton, symbol: "xmark.circle.fill",
                         description: "Hide Lirik", action: #selector(closeTapped))
+        configureButton(muteButton, symbol: "speaker.fill",
+                        description: "Mute", action: #selector(muteTapped))
+        configureButton(backButton, symbol: "music.note",
+                        description: "Back to lyrics", action: #selector(showLyrics))
+
+        configureSlider(brightnessSlider, action: #selector(brightnessChanged))
+        configureSlider(volumeSlider, action: #selector(volumeChanged))
     }
 
     /// Call once at launch. Installs the Control Strip button and presents the bar.
@@ -69,8 +92,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     func present() {
         NSApp.unhide(nil)
-        // Re-applying this on every present keeps Apple's left-side close box
-        // hidden; only our own X (right of the transport buttons) remains.
         PrivateTouchBar.showsCloseBoxWhenFrontMost(false)
         PrivateTouchBar.present(touchBar, trayID: Self.trayID)
         isPresented = true
@@ -83,8 +104,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         DebugLog.write("System Touch Bar dismissed — frontmost app's bar restored")
     }
 
-    /// Force a one-time repaint after the Touch Bar wakes from idle.
-    /// Rebuilding here is fine because it happens only on wake, not per line.
+    /// Force a one-time repaint after the Touch Bar wakes or the track changes.
     func refresh() {
         guard isPresented else { return }
         touchBar = makeBar()
@@ -97,10 +117,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         label.font = fittingFont(for: text)
         label.stringValue = text
         label.needsDisplay = true
-
-        // The system bar snapshots its views; mutating the label in place is
-        // not enough on modern macOS. Re-present the SAME bar (no rebuild, so
-        // the transport buttons are not recreated) to push the new text out.
         if isPresented {
             PrivateTouchBar.present(touchBar, trayID: Self.trayID)
         }
@@ -126,20 +142,25 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         let item: NSCustomTouchBarItem
         switch identifier {
         case Self.lyricID:
-            item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = label
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = label
         case Self.previousID:
-            item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = previousButton
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = previousButton
         case Self.playID:
-            item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = playButton
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = playButton
         case Self.nextID:
-            item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = nextButton
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = nextButton
+        case Self.controlsID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = controlsButton
         case Self.closeID:
-            item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = closeButton
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = closeButton
+        case Self.brightnessID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = brightnessSlider
+        case Self.volumeID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = volumeSlider
+        case Self.muteID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = muteButton
+        case Self.backID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = backButton
         default:
             return nil
         }
@@ -151,18 +172,18 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private func makeBar() -> NSTouchBar {
         let bar = NSTouchBar()
         bar.delegate = self
-        // flexibleSpace absorbs all slack, pinning the transport buttons to
-        // the right edge while the lyric stays anchored at the left.
-        bar.defaultItemIdentifiers = [
-            Self.lyricID,
-            .flexibleSpace,
-            Self.previousID,
-            Self.playID,
-            Self.nextID,
-            Self.closeID
-        ]
-        // No principal item: that would center the lyric. Leaving it unset
-        // keeps the lyric flush left, next to the close (X) box.
+        switch mode {
+        case .lyrics:
+            bar.defaultItemIdentifiers = [
+                Self.lyricID, .flexibleSpace, Self.previousID,
+                Self.playID, Self.nextID, Self.controlsID, Self.closeID
+            ]
+        case .controls:
+            bar.defaultItemIdentifiers = [
+                Self.brightnessID, Self.volumeID, Self.muteID,
+                .flexibleSpace, Self.backID
+            ]
+        }
         bar.principalItemIdentifier = nil
         return bar
     }
@@ -190,17 +211,21 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         button.widthAnchor.constraint(equalToConstant: 40).isActive = true
     }
 
-    @objc private func playTapped() {
-        SpotifyService.shared.togglePlayback()
+    private func configureSlider(_ slider: NSSlider, action: Selector) {
+        slider.minValue = 0
+        slider.maxValue = 1
+        slider.doubleValue = 0.5
+        slider.target = self
+        slider.action = action
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        slider.widthAnchor.constraint(equalToConstant: 120).isActive = true
     }
 
-    @objc private func previousTapped() {
-        SpotifyService.shared.previousTrack()
-    }
+    // MARK: - Actions
 
-    @objc private func nextTapped() {
-        SpotifyService.shared.nextTrack()
-    }
+    @objc private func playTapped() { SpotifyService.shared.togglePlayback() }
+    @objc private func previousTapped() { SpotifyService.shared.previousTrack() }
+    @objc private func nextTapped() { SpotifyService.shared.nextTrack() }
 
     @objc private func closeTapped() {
         DebugLog.write("Close tapped — hiding Lirik")
@@ -208,4 +233,61 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         LyricPanelWindowController.shared.hidePanel()
         NSApp.hide(nil)
     }
+
+    @objc private func showSystemControls() {
+        mode = .controls
+        refreshSystemControlValues()
+        touchBar = makeBar()
+        present()
+        scheduleAutoReturn()
+    }
+
+    @objc private func showLyrics() {
+        autoReturnTimer?.invalidate()
+        autoReturnTimer = nil
+        mode = .lyrics
+        touchBar = makeBar()
+        present()
+    }
+
+    private func scheduleAutoReturn() {
+        autoReturnTimer?.invalidate()
+        autoReturnTimer = Timer.scheduledTimer(withTimeInterval: 6, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.showLyrics() }
+        }
+    }
+
+    private func refreshSystemControlValues() {
+        if let brightness = SystemControls.brightness {
+            brightnessSlider.doubleValue = Double(brightness)
+        }
+        let volume = SystemControls.volume
+        if let volume { volumeSlider.doubleValue = Double(volume) }
+        let muted = volume != nil && SystemControls.isMuted
+        if cachedMutedState != muted {
+            cachedMutedState = muted
+            muteButton.image = NSImage(
+                systemSymbolName: muted ? "speaker.slash.fill" : "speaker.fill",
+                accessibilityDescription: muted ? "Unmute" : "Mute"
+            )
+        }
+    }
+
+    @objc private func brightnessChanged(_ sender: NSSlider) {
+        SystemControls.brightness = Float(sender.doubleValue)
+        scheduleAutoReturn()
+    }
+
+    @objc private func volumeChanged(_ sender: NSSlider) {
+        SystemControls.volume = Float(sender.doubleValue)
+        if sender.doubleValue > 0, SystemControls.isMuted { SystemControls.isMuted = false }
+        scheduleAutoReturn()
+    }
+
+    @objc private func muteTapped() {
+        SystemControls.isMuted.toggle()
+        refreshSystemControlValues()
+        scheduleAutoReturn()
+    }
 }
+

@@ -38,6 +38,9 @@ is minimized or hidden.
 - The system bar has the **current lyric on the left** and three transport
   buttons on the right: `backward`, `play/pause` (icon follows playback state),
   and `forward`. They control Spotify directly.
+- A **slider button** switches the bar to **brightness / volume / mute** controls
+  (because the full-width bar hides the system Control Strip). It returns to
+  lyrics automatically after ~6 seconds, or tap the ♪ button to go back.
 - An **✕ button** at the right of the bar **dismisses** the system Touch Bar so
   macOS shows the frontmost app's own bar again (emoji picker when typing,
   media progress in YouTube/Safari, etc.). It also hides the Lyric Panel and
