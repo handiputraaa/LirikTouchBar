@@ -16,13 +16,32 @@ final class FunctionKeyMonitor {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
     private var globalMonitor: Any?
+    private var recheckTimer: Timer?
     private var fnDown = false
 
     private init() {}
 
     func register() {
+        DebugLog.write("Fn registration check: trusted=\(AXIsProcessTrusted()) bundle=\(Bundle.main.bundlePath)")
         registerCarbonHotKey()   // harmless fallback on Macs that deliver Fn
         registerGlobalMonitor()
+
+        // A menu-bar app may not receive applicationDidBecomeActive after the
+        // user grants Accessibility in System Settings, so poll for trust.
+        guard recheckTimer == nil else { return }
+        recheckTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            self?.recheck()
+        }
+    }
+
+    /// Re-checks trust without showing a prompt (safe to call repeatedly).
+    func recheck() {
+        guard AXIsProcessTrusted() else { return }
+        let wasInstalled = globalMonitor != nil
+        registerGlobalMonitor()
+        if !wasInstalled, globalMonitor != nil {
+            DebugLog.write("Accessibility granted — Fn monitor active")
+        }
     }
 
     /// Prompts for Accessibility and, once granted, starts the monitor and
