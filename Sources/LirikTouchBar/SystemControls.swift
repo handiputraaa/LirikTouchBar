@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import AudioToolbox
+import ObjectiveC
 import Darwin
 
 /// Reads and sets the built-in display brightness and the default output volume.
@@ -57,6 +58,49 @@ enum SystemControls {
         set { setOutputProperty(kAudioDevicePropertyMute, UInt32(newValue ? 1 : 0)) }
     }
 
+    // MARK: - Keyboard backlight
+
+    private static let coreBrightness = dlopen(
+        "/System/Library/PrivateFrameworks/CoreBrightness.framework/CoreBrightness",
+        RTLD_LAZY
+    )
+
+    private static let keyboardClient: NSObject? = {
+        guard coreBrightness != nil,
+              let type = NSClassFromString("KeyboardBrightnessClient") as? NSObject.Type else { return nil }
+        return type.init()
+    }()
+
+    private static let keyboardID: UInt64? = {
+        guard let client = keyboardClient else { return nil }
+        let selector = NSSelectorFromString("copyKeyboardBacklightIDs")
+        guard client.responds(to: selector),
+              let ids = client.perform(selector)?.takeRetainedValue() as? [NSNumber],
+              let first = ids.first else { return nil }
+        return first.uint64Value
+    }()
+
+    static var keyboardBrightness: Float? {
+        get {
+            guard let client = keyboardClient, let id = keyboardID else { return nil }
+            let selector = NSSelectorFromString("brightnessForKeyboard:")
+            guard client.responds(to: selector) else { return nil }
+            typealias Getter = @convention(c) (AnyObject, Selector, UInt64) -> Float
+            return unsafeBitCast(client.method(for: selector), to: Getter.self)(
+                client, selector, id
+            )
+        }
+        set {
+            guard let client = keyboardClient, let id = keyboardID, let value = newValue else { return }
+            let selector = NSSelectorFromString("setBrightness:fadeSpeed:commit:forKeyboard:")
+            guard client.responds(to: selector) else { return }
+            typealias Setter = @convention(c) (AnyObject, Selector, Float, Int32, Bool, UInt64) -> Bool
+            _ = unsafeBitCast(client.method(for: selector), to: Setter.self)(
+                client, selector, min(1, max(0, value)), 0, true, id
+            )
+        }
+    }
+
     // MARK: - Audio helpers
 
     private static func defaultOutput() -> AudioDeviceID? {
@@ -95,7 +139,7 @@ enum SystemControls {
         guard let device = defaultOutput() else { return }
         var address = outputAddress(selector)
         var value = value
-        withUnsafeBytes(of: &value) { raw in
+        _ = withUnsafeBytes(of: &value) { raw in
             AudioObjectSetPropertyData(
                 device, &address, 0, nil, UInt32(MemoryLayout<T>.size), raw.baseAddress!
             )

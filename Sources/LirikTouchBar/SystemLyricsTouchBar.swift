@@ -23,6 +23,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let brightnessID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness")
     private static let volumeID = NSTouchBarItem.Identifier("com.iseng.lirik.volume")
     private static let muteID = NSTouchBarItem.Identifier("com.iseng.lirik.mute")
+    private static let keyboardID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard")
+    private static let nativeID = NSTouchBarItem.Identifier("com.iseng.lirik.native")
     private static let backID = NSTouchBarItem.Identifier("com.iseng.lirik.back")
 
     private var touchBar = NSTouchBar()
@@ -37,7 +39,9 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     private let brightnessSlider = NSSlider()
     private let volumeSlider = NSSlider()
+    private let keyboardSlider = NSSlider()
     private let muteButton = NSButton()
+    private let nativeButton = NSButton()
     private let backButton = NSButton()
 
     private var trayItem: NSCustomTouchBarItem?
@@ -70,11 +74,14 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Hide Lirik", action: #selector(closeTapped))
         configureButton(muteButton, symbol: "speaker.fill",
                         description: "Mute", action: #selector(muteTapped))
+        configureButton(nativeButton, symbol: "command",
+                        description: "Show native Touch Bar", action: #selector(nativeTapped))
         configureButton(backButton, symbol: "music.note",
                         description: "Back to lyrics", action: #selector(showLyrics))
 
         configureSlider(brightnessSlider, action: #selector(brightnessChanged))
         configureSlider(volumeSlider, action: #selector(volumeChanged))
+        configureSlider(keyboardSlider, action: #selector(keyboardChanged))
     }
 
     /// Call once at launch. Installs the Control Strip button and presents the bar.
@@ -154,11 +161,18 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         case Self.closeID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = closeButton
         case Self.brightnessID:
-            item = NSCustomTouchBarItem(identifier: identifier); item.view = brightnessSlider
+            item = NSCustomTouchBarItem(identifier: identifier)
+            item.view = controlView(symbol: "sun.max.fill", slider: brightnessSlider)
         case Self.volumeID:
-            item = NSCustomTouchBarItem(identifier: identifier); item.view = volumeSlider
+            item = NSCustomTouchBarItem(identifier: identifier)
+            item.view = controlView(symbol: "speaker.wave.2.fill", slider: volumeSlider)
+        case Self.keyboardID:
+            item = NSCustomTouchBarItem(identifier: identifier)
+            item.view = controlView(symbol: "keyboard.fill", slider: keyboardSlider)
         case Self.muteID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = muteButton
+        case Self.nativeID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = nativeButton
         case Self.backID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = backButton
         default:
@@ -180,8 +194,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             ]
         case .controls:
             bar.defaultItemIdentifiers = [
-                Self.brightnessID, Self.volumeID, Self.muteID,
-                .flexibleSpace, Self.backID
+                Self.brightnessID, Self.volumeID, Self.keyboardID, Self.muteID,
+                .flexibleSpace, Self.nativeID, Self.backID
             ]
         }
         bar.principalItemIdentifier = nil
@@ -217,8 +231,20 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         slider.doubleValue = 0.5
         slider.target = self
         slider.action = action
-        slider.translatesAutoresizingMaskIntoConstraints = false
-        slider.widthAnchor.constraint(equalToConstant: 120).isActive = true
+        slider.isContinuous = true
+    }
+
+    /// A slider with an SF Symbol icon on its left, so every control is labeled.
+    private func controlView(symbol: String, slider: NSSlider) -> NSView {
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        let imageView = NSImageView(frame: NSRect(x: 0, y: 6, width: 18, height: 18))
+        imageView.image = image
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        slider.frame = NSRect(x: 22, y: 7, width: 124, height: 16)
+        container.addSubview(imageView)
+        container.addSubview(slider)
+        return container
     }
 
     // MARK: - Actions
@@ -263,6 +289,9 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         }
         let volume = SystemControls.volume
         if let volume { volumeSlider.doubleValue = Double(volume) }
+        if let keyboard = SystemControls.keyboardBrightness {
+            keyboardSlider.doubleValue = Double(keyboard)
+        }
         let muted = volume != nil && SystemControls.isMuted
         if cachedMutedState != muted {
             cachedMutedState = muted
@@ -284,10 +313,29 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         scheduleAutoReturn()
     }
 
+    @objc private func keyboardChanged(_ sender: NSSlider) {
+        SystemControls.keyboardBrightness = Float(sender.doubleValue)
+        scheduleAutoReturn()
+    }
+
     @objc private func muteTapped() {
         SystemControls.isMuted.toggle()
         refreshSystemControlValues()
         scheduleAutoReturn()
+    }
+
+    /// Temporarily reveals the native Touch Bar (all system functions), then
+    /// brings the lyric bar back after a short delay.
+    @objc private func nativeTapped() {
+        autoReturnTimer?.invalidate()
+        hide()
+        autoReturnTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.mode = .lyrics
+                self?.touchBar = self!.makeBar()
+                self?.present()
+            }
+        }
     }
 }
 
