@@ -110,8 +110,10 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Increase volume", action: #selector(volumeUp))
         configureButton(keyboardDownButton, symbol: "keyboard", width: 52,
                         description: "Decrease keyboard light", action: #selector(keyboardDown))
+        keyboardDownButton.image = KeyboardLightIcon.image(increase: false)
         configureButton(keyboardUpButton, symbol: "keyboard.fill", width: 52,
                         description: "Increase keyboard light", action: #selector(keyboardUp))
+        keyboardUpButton.image = KeyboardLightIcon.image(increase: true)
 
         configureSlider(brightnessSlider, action: #selector(brightnessChanged))
         configureSlider(volumeSlider, action: #selector(volumeChanged))
