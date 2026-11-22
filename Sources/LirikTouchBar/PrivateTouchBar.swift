@@ -38,8 +38,10 @@ enum PrivateTouchBar {
     static func showsCloseBoxWhenFrontMost(_ show: Bool) {
         guard let dfr,
               let symbol = dlsym(dfr, "DFRSystemModalShowsCloseBoxWhenFrontMost") else { return }
-        typealias Function = @convention(c) (Bool) -> Void
-        unsafeBitCast(symbol, to: Function.self)(show)
+        // Private header declares BOOL; pass an explicit 32-bit integer so the
+        // ABI matches regardless of Swift's Bool representation.
+        typealias Function = @convention(c) (Int32) -> Void
+        unsafeBitCast(symbol, to: Function.self)(show ? 1 : 0)
     }
 
     /// Presents a system-level bar that remains visible across all apps.
