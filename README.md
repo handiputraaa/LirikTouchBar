@@ -35,9 +35,10 @@ APIs (see `PrivateTouchBar.swift`). This bar stays on the physical Touch Bar
 regardless of which app is focused, and regardless of whether the Lyric Panel
 is minimized or hidden.
 
-- The system bar has the **current lyric on the left** and three transport
-  buttons on the right: `backward`, `play/pause` (icon follows playback state),
-  and `forward`. They control Spotify directly.
+- The system bar has the **current lyric on the left** and transport buttons on
+  the right: `previous track`, `back 15s`, `play/pause` (icon follows playback
+  state), `forward 15s`, `next track`, plus the controls and close buttons.
+  All of them control Spotify directly.
 - A **slider button** switches the bar to labeled system controls: **display
   brightness (☀), volume (🔊), keyboard backlight (⌨), and mute** (because the
   full-width bar hides the system Control Strip). It returns to lyrics after

@@ -54,6 +54,20 @@ final class SpotifyService {
     end tell
     """
 
+    private static func seekScript(_ delta: Double) -> String {
+        let offset = delta >= 0 ? "+\(delta)" : "-\(abs(delta))"
+        return """
+        tell application "Spotify"
+            if running then
+                set p to (player position) as real
+                set np to p \(offset)
+                if np < 0 then set np to 0
+                set player position to np
+            end if
+        end tell
+        """
+    }
+
     private let queue = DispatchQueue(label: "com.iseng.lirik.spotify", qos: .userInitiated)
 
     func fetchSnapshot() async -> SpotifySnapshot? {
@@ -80,6 +94,11 @@ final class SpotifyService {
 
     func previousTrack() {
         run(Self.previousScript)
+    }
+
+    /// Seek forward or backward by a number of seconds.
+    func seek(by seconds: Double) {
+        run(Self.seekScript(seconds))
     }
 
     // MARK: - Private

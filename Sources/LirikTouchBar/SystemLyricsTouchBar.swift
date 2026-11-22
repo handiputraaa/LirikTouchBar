@@ -9,7 +9,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private enum Mode { case lyrics, controls }
 
     /// Usable lyric width after the transport buttons.
-    private static let maxWidth: CGFloat = 560
+    private static let maxWidth: CGFloat = 480
     private static let maxFontSize: CGFloat = 16
     private static let minFontSize: CGFloat = 9
 
@@ -18,6 +18,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let previousID = NSTouchBarItem.Identifier("com.iseng.lirik.previous")
     private static let playID = NSTouchBarItem.Identifier("com.iseng.lirik.play")
     private static let nextID = NSTouchBarItem.Identifier("com.iseng.lirik.next")
+    private static let seekBackID = NSTouchBarItem.Identifier("com.iseng.lirik.seekback")
+    private static let seekForwardID = NSTouchBarItem.Identifier("com.iseng.lirik.seekforward")
     private static let controlsID = NSTouchBarItem.Identifier("com.iseng.lirik.controls")
     private static let closeID = NSTouchBarItem.Identifier("com.iseng.lirik.close")
     private static let brightnessID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness")
@@ -34,6 +36,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private let previousButton = NSButton()
     private let playButton = NSButton()
     private let nextButton = NSButton()
+    private let seekBackButton = NSButton()
+    private let seekForwardButton = NSButton()
     private let controlsButton = NSButton()
     private let closeButton = NSButton()
 
@@ -68,6 +72,10 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "Play", action: #selector(playTapped))
         configureButton(nextButton, symbol: "forward.fill",
                         description: "Next track", action: #selector(nextTapped))
+        configureButton(seekBackButton, symbol: "gobackward.15",
+                        description: "Back 15 seconds", action: #selector(seekBackTapped))
+        configureButton(seekForwardButton, symbol: "goforward.15",
+                        description: "Forward 15 seconds", action: #selector(seekForwardTapped))
         configureButton(controlsButton, symbol: "slider.horizontal.3",
                         description: "System controls", action: #selector(showSystemControls))
         configureButton(closeButton, symbol: "xmark.circle.fill",
@@ -156,6 +164,10 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             item = NSCustomTouchBarItem(identifier: identifier); item.view = playButton
         case Self.nextID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = nextButton
+        case Self.seekBackID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = seekBackButton
+        case Self.seekForwardID:
+            item = NSCustomTouchBarItem(identifier: identifier); item.view = seekForwardButton
         case Self.controlsID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = controlsButton
         case Self.closeID:
@@ -189,8 +201,10 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         switch mode {
         case .lyrics:
             bar.defaultItemIdentifiers = [
-                Self.lyricID, .flexibleSpace, Self.previousID,
-                Self.playID, Self.nextID, Self.controlsID, Self.closeID
+                Self.lyricID, .flexibleSpace,
+                Self.previousID, Self.seekBackID, Self.playID,
+                Self.seekForwardID, Self.nextID,
+                Self.controlsID, Self.closeID
             ]
         case .controls:
             bar.defaultItemIdentifiers = [
@@ -222,7 +236,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         button.target = self
         button.action = action
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        button.widthAnchor.constraint(equalToConstant: 34).isActive = true
     }
 
     private func configureSlider(_ slider: NSSlider, action: Selector) {
@@ -252,6 +266,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     @objc private func playTapped() { SpotifyService.shared.togglePlayback() }
     @objc private func previousTapped() { SpotifyService.shared.previousTrack() }
     @objc private func nextTapped() { SpotifyService.shared.nextTrack() }
+    @objc private func seekBackTapped() { SpotifyService.shared.seek(by: -15) }
+    @objc private func seekForwardTapped() { SpotifyService.shared.seek(by: 15) }
 
     @objc private func closeTapped() {
         DebugLog.write("Close tapped — hiding Lirik")
