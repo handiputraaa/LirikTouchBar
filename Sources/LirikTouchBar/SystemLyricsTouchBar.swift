@@ -66,15 +66,15 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.widthAnchor.constraint(lessThanOrEqualToConstant: 660).isActive = true
 
-        configureButton(previousButton, symbol: "backward.fill",
+        configureButton(previousButton, symbol: "backward.fill", width: 44,
                         description: "Previous track", action: #selector(previousTapped))
-        configureButton(playButton, symbol: "play.fill",
+        configureButton(playButton, symbol: "play.fill", width: 48,
                         description: "Play", action: #selector(playTapped))
-        configureButton(nextButton, symbol: "forward.fill",
+        configureButton(nextButton, symbol: "forward.fill", width: 44,
                         description: "Next track", action: #selector(nextTapped))
-        configureButton(seekBackButton, symbol: "gobackward.15",
+        configureButton(seekBackButton, symbol: "gobackward.15", width: 44,
                         description: "Back 15 seconds", action: #selector(seekBackTapped))
-        configureButton(seekForwardButton, symbol: "goforward.15",
+        configureButton(seekForwardButton, symbol: "goforward.15", width: 44,
                         description: "Forward 15 seconds", action: #selector(seekForwardTapped))
         configureButton(controlsButton, symbol: "slider.horizontal.3",
                         description: "System controls", action: #selector(showSystemControls))
@@ -140,10 +140,12 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     func setPlaying(_ playing: Bool) {
         guard cachedPlayingState != playing else { return }
         cachedPlayingState = playing
-        playButton.image = NSImage(
+        let playImage = NSImage(
             systemSymbolName: playing ? "pause.fill" : "play.fill",
             accessibilityDescription: playing ? "Pause" : "Play"
         )
+        playImage?.size = NSSize(width: 38, height: 38)
+        playButton.image = playImage
     }
 
     @objc func toggle() {
@@ -229,14 +231,17 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     private func configureButton(_ button: NSButton, symbol: String,
+                                 width: CGFloat = 34,
                                  description: String, action: Selector) {
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: description)
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: description)
+        image?.size = NSSize(width: width - 10, height: width - 10)
+        button.image = image
         button.imagePosition = .imageOnly
         button.bezelStyle = .rounded
         button.target = self
         button.action = action
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.widthAnchor.constraint(equalToConstant: 34).isActive = true
+        button.widthAnchor.constraint(equalToConstant: width).isActive = true
     }
 
     private func configureSlider(_ slider: NSSlider, action: Selector) {
