@@ -4,6 +4,13 @@ import AppKit
 /// keyboard keys. `increase` renders long rays, `decrease` renders short ones.
 enum KeyboardLightIcon {
     static func image(increase: Bool) -> NSImage {
+        let resource = increase ? "keyboard-light-increase" : "keyboard-light-decrease"
+        if let url = Bundle.module.url(forResource: resource, withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+
+        // Fallback if the bundled asset is missing.
         let size = NSSize(width: 36, height: 36)
         let image = NSImage(size: size)
         image.lockFocus()

@@ -10,7 +10,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "LirikTouchBar",
-            path: "Sources/LirikTouchBar"
+            path: "Sources/LirikTouchBar",
+            resources: [.copy("Assets")]
         )
     ]
 )
