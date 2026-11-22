@@ -9,7 +9,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private enum Mode { case lyrics, controls }
 
     /// Usable lyric width after the transport buttons.
-    private static let maxWidth: CGFloat = 480
+    private static let maxWidth: CGFloat = 440
     private static let maxFontSize: CGFloat = 16
     private static let minFontSize: CGFloat = 9
 
@@ -66,15 +66,15 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.widthAnchor.constraint(lessThanOrEqualToConstant: 660).isActive = true
 
-        configureButton(previousButton, symbol: "backward.fill", width: 44,
+        configureButton(previousButton, symbol: "backward.fill", width: 52,
                         description: "Previous track", action: #selector(previousTapped))
-        configureButton(playButton, symbol: "play.fill", width: 48,
+        configureButton(playButton, symbol: "play.fill", width: 60,
                         description: "Play", action: #selector(playTapped))
-        configureButton(nextButton, symbol: "forward.fill", width: 44,
+        configureButton(nextButton, symbol: "forward.fill", width: 52,
                         description: "Next track", action: #selector(nextTapped))
-        configureButton(seekBackButton, symbol: "gobackward.15", width: 44,
+        configureButton(seekBackButton, symbol: "gobackward.15", width: 52,
                         description: "Back 15 seconds", action: #selector(seekBackTapped))
-        configureButton(seekForwardButton, symbol: "goforward.15", width: 44,
+        configureButton(seekForwardButton, symbol: "goforward.15", width: 52,
                         description: "Forward 15 seconds", action: #selector(seekForwardTapped))
         configureButton(controlsButton, symbol: "slider.horizontal.3",
                         description: "System controls", action: #selector(showSystemControls))
@@ -144,7 +144,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             systemSymbolName: playing ? "pause.fill" : "play.fill",
             accessibilityDescription: playing ? "Pause" : "Play"
         )
-        playImage?.size = NSSize(width: 38, height: 38)
+        playImage?.size = NSSize(width: 46, height: 46)
         playButton.image = playImage
     }
 
