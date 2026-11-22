@@ -452,8 +452,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     @objc private func launchpadTapped() {
-        let url = URL(fileURLWithPath: "/System/Applications/Launchpad.app")
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        AppGridWindowController.shared.showWindow()
         showLyrics()
     }
 
