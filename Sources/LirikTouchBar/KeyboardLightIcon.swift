@@ -5,10 +5,14 @@ import AppKit
 enum KeyboardLightIcon {
     static func image(increase: Bool) -> NSImage {
         let resource = increase ? "keyboard-light-increase" : "keyboard-light-decrease"
-        if let url = Bundle.module.url(forResource: resource, withExtension: "png"),
+        // Bundle.module points at the SwiftPM build directory, not the packaged
+        // .app, so load the PNGs copied into Contents/Resources instead.
+        if let url = Bundle.main.url(forResource: resource, withExtension: "png"),
            let image = NSImage(contentsOf: url) {
+            DebugLog.write("Loaded icon \(resource) from \(url.path)")
             return image
         }
+        DebugLog.write("Icon \(resource) NOT FOUND — using drawn fallback")
 
         // Fallback if the bundled asset is missing.
         let size = NSSize(width: 36, height: 36)

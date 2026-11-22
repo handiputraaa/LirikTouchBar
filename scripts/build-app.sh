@@ -35,11 +35,8 @@ cp "$UNIVERSAL" "$APP/Contents/MacOS/LirikTouchBar"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-# SwiftPM resource bundle (SVG-derived keyboard-light icons).
-RESOURCE_BUNDLE=".build/${HOST}-apple-macosx/${CONFIG}/LirikTouchBar_LirikTouchBar.bundle"
-if [[ -d "$RESOURCE_BUNDLE" ]]; then
-    cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
-fi
+# SVG-derived keyboard-light icons, loaded via Bundle.main at runtime.
+cp Sources/LirikTouchBar/Assets/keyboard-light-*.png "$APP/Contents/Resources/"
 
 # Ad-hoc sign so macOS Gatekeeper accepts a locally built app.
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true

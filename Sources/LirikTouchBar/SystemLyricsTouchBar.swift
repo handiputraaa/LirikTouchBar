@@ -214,7 +214,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
             item.view = controlView(symbol: "speaker.wave.2.fill", slider: volumeSlider)
         case Self.keyboardID:
             item = NSCustomTouchBarItem(identifier: identifier)
-            item.view = controlView(symbol: "keyboard.fill", slider: keyboardSlider)
+            item.view = controlView(symbol: nil, slider: keyboardSlider,
+                                    image: KeyboardLightIcon.image(increase: true))
         case Self.muteID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = muteButton
         case Self.nativeID:
@@ -304,11 +305,13 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     /// A slider with an SF Symbol icon on its left, so every control is labeled.
-    private func controlView(symbol: String, slider: NSSlider) -> NSView {
+    private func controlView(symbol: String?, slider: NSSlider,
+                             image: NSImage? = nil) -> NSView {
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 150, height: 30))
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        let resolvedImage = image ?? NSImage(systemSymbolName: symbol ?? "",
+                                             accessibilityDescription: nil)
         let imageView = NSImageView(frame: NSRect(x: 0, y: 6, width: 18, height: 18))
-        imageView.image = image
+        imageView.image = resolvedImage
         imageView.imageScaling = .scaleProportionallyUpOrDown
         slider.frame = NSRect(x: 22, y: 7, width: 124, height: 16)
         container.addSubview(imageView)
