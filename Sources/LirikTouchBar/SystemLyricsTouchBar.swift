@@ -94,11 +94,16 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     func setText(_ text: String) {
         guard label.stringValue != text else { return }
-        // Update only the label in place. Rebuilding or re-presenting the bar
-        // here would recreate the transport items and make them flicker.
         label.font = fittingFont(for: text)
         label.stringValue = text
         label.needsDisplay = true
+
+        // The system bar snapshots its views; mutating the label in place is
+        // not enough on modern macOS. Re-present the SAME bar (no rebuild, so
+        // the transport buttons are not recreated) to push the new text out.
+        if isPresented {
+            PrivateTouchBar.present(touchBar, trayID: Self.trayID)
+        }
     }
 
     func setPlaying(_ playing: Bool) {
