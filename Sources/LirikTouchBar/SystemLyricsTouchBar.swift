@@ -64,14 +64,14 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
         PrivateTouchBar.addSystemTrayItem(item)
         PrivateTouchBar.setControlStripPresence(Self.trayID, visible: true)
-        // Disable Apple's close box — it cannot be intercepted, so our own
-        // X button (below) handles hiding the app instead.
-        PrivateTouchBar.showsCloseBoxWhenFrontMost(false)
         present()
     }
 
     func present() {
         NSApp.unhide(nil)
+        // Re-applying this on every present keeps Apple's left-side close box
+        // hidden; only our own X (right of the transport buttons) remains.
+        PrivateTouchBar.showsCloseBoxWhenFrontMost(false)
         PrivateTouchBar.present(touchBar, trayID: Self.trayID)
         isPresented = true
         DebugLog.write("System Touch Bar presented")
@@ -88,7 +88,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     func refresh() {
         guard isPresented else { return }
         touchBar = makeBar()
-        PrivateTouchBar.present(touchBar, trayID: Self.trayID)
+        present()
         DebugLog.write("System Touch Bar repainted")
     }
 
