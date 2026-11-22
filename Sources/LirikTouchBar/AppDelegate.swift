@@ -66,6 +66,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        // If the user just granted Accessibility, start watching Fn immediately.
+        functionKey.register()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         controller.stop()
         DistributedNotificationCenter.default().removeObserver(self)

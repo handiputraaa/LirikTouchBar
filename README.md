@@ -48,8 +48,12 @@ is minimized or hidden.
 - Pressing **Fn / 🌐** while the lyric bar is active swaps it for a macOS-style
   row: `sun.min / sun.max` (display brightness), `speaker / speaker.wave` (volume),
   and `keyboard / keyboard.fill` (keyboard backlight). Each press adjusts in
-  steps; the row returns to lyrics after ~3 seconds. No Accessibility permission
-  is needed — this uses a Carbon hotkey.
+  steps; the row returns to lyrics after ~3 seconds.
+  - **One-time setup:** macOS consumes Fn before normal hotkeys, so Lirik needs
+    **Accessibility** access to detect it. Approve the prompt on first launch,
+    or add LirikTouchBar under **System Settings → Privacy & Security →
+    Accessibility** and enable it. The app re-checks whenever it becomes active.
+    If you'd rather not grant this, use the slider button for the same controls.
 - An **✕ button** at the right of the bar **dismisses** the system Touch Bar so
   macOS shows the frontmost app's own bar again (emoji picker when typing,
   media progress in YouTube/Safari, etc.). It also hides the Lyric Panel and

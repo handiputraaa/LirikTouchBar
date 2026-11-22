@@ -1,61 +1,94 @@
 import AppKit
 import Carbon
+import ApplicationServices
 
-/// Watches for the Fn / Globe key via a Carbon event hotkey. Unlike a global
-/// event tap this needs no Accessibility permission.
+/// Watches for the Fn / Globe key.
+///
+/// macOS consumes Fn before Carbon hotkeys can see it (the globe key is handled
+/// by the Touch Bar server), so the primary method is a global NSEvent monitor.
+/// That requires Accessibility permission; we prompt once on first launch.
 final class FunctionKeyMonitor {
     static let shared = FunctionKeyMonitor()
 
-    /// Called every time Fn is pressed down.
+    /// Called when Fn transitions from up to down.
     var onFunctionKey: (() -> Void)?
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
+    private var globalMonitor: Any?
+    private var fnDown = false
 
     private init() {}
 
     func register() {
-        guard hotKeyRef == nil else { return }
+        registerCarbonHotKey()   // harmless fallback on Macs that deliver Fn
+        registerGlobalMonitor()
+    }
 
+    // MARK: - Accessibility
+
+    private var isTrusted: Bool {
+        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        return AXIsProcessTrustedWithOptions([promptKey: true] as CFDictionary)
+    }
+
+    // MARK: - Carbon fallback
+
+    private func registerCarbonHotKey() {
+        guard hotKeyRef == nil else { return }
         let hotKeyID = EventHotKeyID(signature: OSType(0x4C524B32), id: 2) // 'LRK2'
         let status = RegisterEventHotKey(
-            UInt32(kVK_Function),
-            0,
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotKeyRef
+            UInt32(kVK_Function), 0, hotKeyID,
+            GetApplicationEventTarget(), 0, &hotKeyRef
         )
-        guard status == noErr else {
-            DebugLog.write("Fn hotkey registration failed: \(status)")
-            return
-        }
+        guard status == noErr else { return }
 
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
             eventKind: UInt32(kEventHotKeyPressed)
         )
-        let handlerStatus = InstallEventHandler(
+        InstallEventHandler(
             GetApplicationEventTarget(),
             { _, _, _ -> OSStatus in
-                DispatchQueue.main.async {
-                    DebugLog.write("Fn key pressed")
-                    FunctionKeyMonitor.shared.onFunctionKey?()
-                }
+                DispatchQueue.main.async { FunctionKeyMonitor.shared.fireIfNeeded() }
                 return noErr
             },
-            1,
-            &eventType,
-            nil,
-            &eventHandlerRef
+            1, &eventType, nil, &eventHandlerRef
         )
-        if handlerStatus != noErr {
-            DebugLog.write("Fn event handler failed: \(handlerStatus)")
+    }
+
+    // MARK: - Global monitor
+
+    private func registerGlobalMonitor() {
+        guard globalMonitor == nil else { return }
+        guard isTrusted else {
+            DebugLog.write("Accessibility not granted — Fn key detection unavailable")
+            return
         }
+
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.flagsChanged, .keyDown]) {
+            [weak self] event in
+            guard let self else { return }
+            let fnNow = event.modifierFlags.contains(.function) ||
+                        event.keyCode == UInt16(kVK_Function)
+            if fnNow && !self.fnDown {
+                self.fireIfNeeded()
+            }
+            self.fnDown = fnNow
+        }
+        DebugLog.write("Fn global monitor installed")
+    }
+
+    // MARK: - Firing
+
+    private func fireIfNeeded() {
+        DebugLog.write("Fn key pressed")
+        onFunctionKey?()
     }
 
     deinit {
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
         if let eventHandlerRef { RemoveEventHandler(eventHandlerRef) }
+        if let globalMonitor { NSEvent.removeMonitor(globalMonitor) }
     }
 }
