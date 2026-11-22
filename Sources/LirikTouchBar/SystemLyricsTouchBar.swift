@@ -100,20 +100,24 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         configureButton(backButton, symbol: "music.note",
                         description: "Back to lyrics", action: #selector(showLyrics))
 
-        configureButton(brightnessDownButton, symbol: "sun.min.fill", width: 52,
+        configureButton(brightnessDownButton, symbol: "sun.min.fill", width: 60,
                         description: "Decrease brightness", action: #selector(brightnessDown))
-        configureButton(brightnessUpButton, symbol: "sun.max.fill", width: 52,
+        configureButton(brightnessUpButton, symbol: "sun.max.fill", width: 60,
                         description: "Increase brightness", action: #selector(brightnessUp))
-        configureButton(volumeDownButton, symbol: "speaker.wave.1.fill", width: 52,
+        configureButton(volumeDownButton, symbol: "speaker.wave.1.fill", width: 60,
                         description: "Decrease volume", action: #selector(volumeDown))
-        configureButton(volumeUpButton, symbol: "speaker.wave.3.fill", width: 52,
+        configureButton(volumeUpButton, symbol: "speaker.wave.3.fill", width: 60,
                         description: "Increase volume", action: #selector(volumeUp))
-        configureButton(keyboardDownButton, symbol: "keyboard", width: 52,
+        configureButton(keyboardDownButton, symbol: "keyboard", width: 70,
                         description: "Decrease keyboard light", action: #selector(keyboardDown))
-        keyboardDownButton.image = KeyboardLightIcon.image(increase: false)
-        configureButton(keyboardUpButton, symbol: "keyboard.fill", width: 52,
+        let keyboardDim = KeyboardLightIcon.image(increase: false)
+        keyboardDim.size = NSSize(width: 56, height: 56)
+        keyboardDownButton.image = keyboardDim
+        configureButton(keyboardUpButton, symbol: "keyboard.fill", width: 70,
                         description: "Increase keyboard light", action: #selector(keyboardUp))
-        keyboardUpButton.image = KeyboardLightIcon.image(increase: true)
+        let keyboardBright = KeyboardLightIcon.image(increase: true)
+        keyboardBright.size = NSSize(width: 56, height: 56)
+        keyboardUpButton.image = keyboardBright
 
         configureSlider(brightnessSlider, action: #selector(brightnessChanged))
         configureSlider(volumeSlider, action: #selector(volumeChanged))
