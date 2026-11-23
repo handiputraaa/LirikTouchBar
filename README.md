@@ -23,7 +23,8 @@ desktop app onto your MacBook Pro Touch Bar.
   instead of printing the lyric across the top bar.
 - Global hotkey `⌥⌘L` brings the Lyric Panel forward.
 - Preferences for refresh interval, font size, visible lines, launch at login,
-  and an optional **Romanize Korean lyrics** switch (안녕하세요 → annyeonghaseyo).
+  and an optional **Romanize Korean lyrics** switch using Revised Romanization
+  (사랑해요 → saranghaeyo, 한국 → hanguk).
 - Ships as a **universal binary** — runs natively on both Apple Silicon (M
   series) and Intel Macs. Requires macOS 13+.
 

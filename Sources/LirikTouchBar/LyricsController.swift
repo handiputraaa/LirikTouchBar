@@ -176,7 +176,7 @@ final class LyricsController: ObservableObject {
     // MARK: - Rendering
 
     /// Converts Hangul to roman letters when the preference is enabled.
-    /// Uses Apple's built-in to-Latin transform (Revised Romanization).
+    /// Uses a dedicated Revised Romanization converter (`KoreanRomanizer`).
     private func displayText(_ raw: String) -> String {
         guard AppSettings.shared.romanizeKorean,
               raw.unicodeScalars.contains(where: { scalar in
@@ -186,10 +186,7 @@ final class LyricsController: ObservableObject {
                          (0x3130...0x318F).contains(value)      // compatibility jamo
               }) else { return raw }
 
-        let mutable = NSMutableString(string: raw)
-        var range = NSRange(location: 0, length: mutable.length)
-        mutable.applyTransform(.toLatin, reverse: false, range: range, updatedRange: &range)
-        return mutable as String
+        return KoreanRomanizer.romanize(raw)
     }
 
     private func apply(snapshot: SpotifySnapshot) {

@@ -35,7 +35,7 @@ struct SettingsView: View {
 
             Section("Lyrics") {
                 Toggle("Romanize Korean lyrics", isOn: $settings.romanizeKorean)
-                Text("Shows Korean lines as Roman letters, e.g. 안녕하세요 → annyeonghaseyo.")
+                Text("Shows Korean lines as Roman letters, e.g. 사랑해요 → saranghaeyo.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
