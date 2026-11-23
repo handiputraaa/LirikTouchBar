@@ -7,6 +7,7 @@ private enum SettingsKey {
     static let showMenuBar = "showMenuBar"
     static let fallbackText = "fallbackText"
     static let romanizeKorean = "romanizeKorean"
+    static let romanizeDigits = "romanizeDigits"
 }
 
 final class AppSettings: ObservableObject {
@@ -43,5 +44,11 @@ final class AppSettings: ObservableObject {
     @Published var romanizeKorean: Bool =
         UserDefaults.standard.object(forKey: SettingsKey.romanizeKorean) as? Bool ?? false {
         didSet { UserDefaults.standard.set(romanizeKorean, forKey: SettingsKey.romanizeKorean) }
+    }
+
+    /// When romanizing Korean, read digits one by one (99 → gu gu).
+    @Published var romanizeDigits: Bool =
+        UserDefaults.standard.object(forKey: SettingsKey.romanizeDigits) as? Bool ?? true {
+        didSet { UserDefaults.standard.set(romanizeDigits, forKey: SettingsKey.romanizeDigits) }
     }
 }

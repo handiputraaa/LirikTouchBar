@@ -65,8 +65,48 @@ enum KoreanRomanizer {
         27: ""    // ㅎ is silent before a vowel
     ]
 
-    static func romanize(_ text: String) -> String {
-        let scalars = Array(text.unicodeScalars)
+    private static func isASCIILetter(_ value: UInt32) -> Bool {
+        (65...90).contains(value) || (97...122).contains(value)
+    }
+
+    private static func isWhitespace(_ value: UInt32) -> Bool {
+        value == 32 || value == 9 || value == 10 || value == 13
+    }
+
+    /// Korean digit names, read one at a time (0 → yeong, 9 → gu).
+    private static let digitWords = [
+        "yeong", "il", "i", "sam", "sa", "o", "yuk", "chil", "pal", "gu"
+    ]
+
+    static func romanize(_ text: String, spellOutDigits: Bool = false) -> String {
+        let input: String
+        if spellOutDigits {
+            let scalars = Array(text.unicodeScalars)
+            var expanded = ""
+            for (index, scalar) in scalars.enumerated() {
+                let value = scalar.value
+                let isDigit = (48...57).contains(value)
+                // Leave digits embedded in Latin words (e.g. MP3) untouched.
+                let previousIsLetter = index > 0 ? isASCIILetter(scalars[index - 1].value) : false
+                let nextIsLetter = index + 1 < scalars.count
+                    ? isASCIILetter(scalars[index + 1].value) : false
+
+                if isDigit && !previousIsLetter && !nextIsLetter {
+                    expanded += digitWords[Int(value - 48)]
+                    if index + 1 < scalars.count {
+                        let next = scalars[index + 1].value
+                        if !isWhitespace(next) { expanded += " " }
+                    }
+                } else {
+                    expanded.unicodeScalars.append(scalar)
+                }
+            }
+            input = expanded
+        } else {
+            input = text
+        }
+
+        let scalars = Array(input.unicodeScalars)
         var result = ""
         var index = 0
 

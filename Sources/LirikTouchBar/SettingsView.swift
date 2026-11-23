@@ -35,7 +35,8 @@ struct SettingsView: View {
 
             Section("Lyrics") {
                 Toggle("Romanize Korean lyrics", isOn: $settings.romanizeKorean)
-                Text("Shows Korean lines as Roman letters, e.g. 사랑해요 → saranghaeyo.")
+                Toggle("Read numbers one by one", isOn: $settings.romanizeDigits)
+                Text("Korean lines become Roman letters; digits are read individually, e.g. 99년 → gu gu nyeon.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -57,10 +57,13 @@ final class LyricsController: ObservableObject {
             .dropFirst()
             .sink { [weak self] _ in Task { @MainActor in self?.restartPollTimer() } }
 
-        romanizeCancellable = AppSettings.shared.$romanizeKorean
-            .removeDuplicates()
-            .dropFirst()
-            .sink { [weak self] _ in Task { @MainActor in self?.tick() } }
+        romanizeCancellable = Publishers.CombineLatest(
+            AppSettings.shared.$romanizeKorean,
+            AppSettings.shared.$romanizeDigits
+        )
+        .removeDuplicates { $0.0 == $1.0 && $0.1 == $1.1 }
+        .dropFirst()
+        .sink { [weak self] _ in Task { @MainActor in self?.tick() } }
 
         Task { @MainActor in await poll() }
     }
@@ -186,7 +189,7 @@ final class LyricsController: ObservableObject {
                          (0x3130...0x318F).contains(value)      // compatibility jamo
               }) else { return raw }
 
-        return KoreanRomanizer.romanize(raw)
+        return KoreanRomanizer.romanize(raw, spellOutDigits: AppSettings.shared.romanizeDigits)
     }
 
     private func apply(snapshot: SpotifySnapshot) {
