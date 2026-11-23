@@ -56,9 +56,9 @@ is minimized or hidden.
      Each tap adjusts in steps; it returns to lyrics after ~3 seconds.
      You can also trigger the same row from the ♪ menu → **System Controls (Fn)**.
   - **One-time setup for Fn:** macOS handles the globe key before normal hotkeys,
-    so Lirik needs **Accessibility** access to see it. Choose ♪ menu →
-    **Enable Fn Key…** — this prompts for access and opens the correct Settings
-    pane. Enable LirikTouchBar there, then switch back to the app; it re-checks
+    so Lirik needs **Accessibility** access to see it. If it isn't enabled yet,
+    the app prompts on first launch; otherwise add LirikTouchBar under
+    **System Settings → Privacy & Security → Accessibility**. The app re-checks
     on activation. Check the log for `Fn global monitor installed` and
     `Fn key pressed` to confirm it's working.
 - To quit Lirik, use the ♪ menu bar icon → **Quit Lirik** (or `⌘Q` from the
