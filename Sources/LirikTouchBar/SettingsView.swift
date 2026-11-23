@@ -68,10 +68,21 @@ struct SettingsView: View {
         }
         .padding(20)
         .frame(width: 440)
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                Spacer()
+                Button("Close") {
+                    PreferencesWindowController.shared.closeWindow()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+        }
     }
 }
 
-final class PreferencesWindowController: NSWindowController {
+final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
     static let shared = PreferencesWindowController()
 
     private init() {
@@ -85,6 +96,7 @@ final class PreferencesWindowController: NSWindowController {
         window.center()
         window.isReleasedWhenClosed = false
         super.init(window: window)
+        window.delegate = self
         window.contentViewController = NSHostingController(rootView: SettingsView())
     }
 
@@ -94,7 +106,19 @@ final class PreferencesWindowController: NSWindowController {
 
     @MainActor
     func show() {
+        NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    func closeWindow() {
+        window?.orderOut(nil)
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        closeWindow()
+        return false
     }
 }

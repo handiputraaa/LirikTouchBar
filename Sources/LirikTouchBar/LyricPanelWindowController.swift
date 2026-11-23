@@ -46,6 +46,11 @@ struct LyricPanelView: View {
                 }
                 .buttonStyle(.borderless)
                 .font(.caption)
+                Button("Close") {
+                    LyricPanelWindowController.shared.hidePanel()
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
                 Text("⌥⌘L")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -67,12 +72,11 @@ final class LyricPanelWindowController: NSWindowController, NSWindowDelegate {
     private init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 190),
-            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Lirik — Touch Bar Lyrics"
-        window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
         window.center()
         window.isReleasedWhenClosed = false
@@ -105,6 +109,11 @@ final class LyricPanelWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // MARK: - NSWindowDelegate
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        hidePanel()
+        return false
+    }
 
     func windowDidMiniaturize(_ notification: Notification) {
         // Harmless now: the system-modal lyric bar is independent of this window.
