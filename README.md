@@ -22,7 +22,8 @@ desktop app onto your MacBook Pro Touch Bar.
 - A compact **♪ menu-bar icon** gives quick access to Preferences and controls
   instead of printing the lyric across the top bar.
 - Global hotkey `⌥⌘L` brings the Lyric Panel forward.
-- Preferences for refresh interval, font size, visible lines, launch at login.
+- Preferences for refresh interval, font size, visible lines, launch at login,
+  and an optional **Romanize Korean lyrics** switch (안녕하세요 → annyeonghaseyo).
 - Ships as a **universal binary** — runs natively on both Apple Silicon (M
   series) and Intel Macs. Requires macOS 13+.
 
