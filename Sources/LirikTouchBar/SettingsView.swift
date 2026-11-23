@@ -33,6 +33,13 @@ struct SettingsView: View {
                     .textFieldStyle(.roundedBorder)
             }
 
+            Section("Lyrics") {
+                Toggle("Romanize Korean lyrics", isOn: $settings.romanizeKorean)
+                Text("Shows Korean lines as Roman letters, e.g. 안녕하세요 → annyeonghaseyo.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Menu bar") {
                 Toggle("Show menu bar icon", isOn: $settings.showMenuBar)
                 Text("Click the ♪ icon to open preferences, control playback, or hide the Touch Bar lyrics.")

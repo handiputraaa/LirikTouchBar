@@ -6,6 +6,7 @@ private enum SettingsKey {
     static let lineCount = "lineCount"
     static let showMenuBar = "showMenuBar"
     static let fallbackText = "fallbackText"
+    static let romanizeKorean = "romanizeKorean"
 }
 
 final class AppSettings: ObservableObject {
@@ -36,5 +37,11 @@ final class AppSettings: ObservableObject {
     @Published var fallbackText: String =
         UserDefaults.standard.string(forKey: SettingsKey.fallbackText) ?? "♪ No lyrics for this track" {
         didSet { UserDefaults.standard.set(fallbackText, forKey: SettingsKey.fallbackText) }
+    }
+
+    /// Show Korean lyrics romanized (e.g. 안녕하세요 → annyeonghaseyo).
+    @Published var romanizeKorean: Bool =
+        UserDefaults.standard.object(forKey: SettingsKey.romanizeKorean) as? Bool ?? false {
+        didSet { UserDefaults.standard.set(romanizeKorean, forKey: SettingsKey.romanizeKorean) }
     }
 }

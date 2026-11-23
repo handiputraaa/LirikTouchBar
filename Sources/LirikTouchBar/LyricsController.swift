@@ -31,6 +31,7 @@ final class LyricsController: ObservableObject {
     private var pollTimer: Timer?
     private var tickTimer: Timer?
     private var settingsCancellable: AnyCancellable?
+    private var romanizeCancellable: AnyCancellable?
     private var lastSnapshot: SpotifySnapshot?
     private var lyrics: [LyricLine] = []
     private var loadedTrackKey: String = ""
@@ -56,6 +57,11 @@ final class LyricsController: ObservableObject {
             .dropFirst()
             .sink { [weak self] _ in Task { @MainActor in self?.restartPollTimer() } }
 
+        romanizeCancellable = AppSettings.shared.$romanizeKorean
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in Task { @MainActor in self?.tick() } }
+
         Task { @MainActor in await poll() }
     }
 
@@ -66,6 +72,8 @@ final class LyricsController: ObservableObject {
         tickTimer = nil
         settingsCancellable?.cancel()
         settingsCancellable = nil
+        romanizeCancellable?.cancel()
+        romanizeCancellable = nil
     }
 
     func refresh() async {
@@ -167,6 +175,23 @@ final class LyricsController: ObservableObject {
 
     // MARK: - Rendering
 
+    /// Converts Hangul to roman letters when the preference is enabled.
+    /// Uses Apple's built-in to-Latin transform (Revised Romanization).
+    private func displayText(_ raw: String) -> String {
+        guard AppSettings.shared.romanizeKorean,
+              raw.unicodeScalars.contains(where: { scalar in
+                  let value = scalar.value
+                  return (0xAC00...0xD7A3).contains(value) ||   // Hangul syllables
+                         (0x1100...0x11FF).contains(value) ||   // Hangul jamo
+                         (0x3130...0x318F).contains(value)      // compatibility jamo
+              }) else { return raw }
+
+        let mutable = NSMutableString(string: raw)
+        var range = NSRange(location: 0, length: mutable.length)
+        mutable.applyTransform(.toLatin, reverse: false, range: range, updatedRange: &range)
+        return mutable as String
+    }
+
     private func apply(snapshot: SpotifySnapshot) {
         trackTitle = snapshot.track?.name ?? "Not playing"
         artist = snapshot.track?.artist ?? ""
@@ -181,7 +206,7 @@ final class LyricsController: ObservableObject {
 
         if lyrics.isEmpty {
             hasLyrics = false
-            currentLine = AppSettings.shared.fallbackText
+            currentLine = displayText(AppSettings.shared.fallbackText)
             upcomingLine = ""
             secondUpcomingLine = ""
             if snapshot.track == nil {
@@ -193,9 +218,9 @@ final class LyricsController: ObservableObject {
             hasLyrics = true
             var index = 0
             for (i, line) in lyrics.enumerated() where line.time <= position + 0.12 { index = i }
-            currentLine = lyrics[index].text
-            upcomingLine = index + 1 < lyrics.count ? lyrics[index + 1].text : ""
-            secondUpcomingLine = index + 2 < lyrics.count ? lyrics[index + 2].text : ""
+            currentLine = displayText(lyrics[index].text)
+            upcomingLine = index + 1 < lyrics.count ? displayText(lyrics[index + 1].text) : ""
+            secondUpcomingLine = index + 2 < lyrics.count ? displayText(lyrics[index + 2].text) : ""
             if !isFetching { statusMessage = "Synced · \(lyrics.count) lines" }
         }
 
