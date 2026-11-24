@@ -126,6 +126,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     /// Call once at launch. Installs the Control Strip button and presents the bar.
+    @MainActor
     func install() {
         let item = NSCustomTouchBarItem(identifier: Self.trayID)
         let image = NSImage(systemSymbolName: "music.note",
@@ -137,25 +138,30 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         PrivateTouchBar.setControlStripPresence(Self.trayID, visible: true)
         present()
 
-        // macOS can dismiss a system-modal bar on app/window changes. With the
-        // preference on, re-present it automatically so it stays on screen.
-        settingsCancellable = AppSettings.shared.$keepTouchBarOn
-            .removeDuplicates()
-            .sink { [weak self] enabled in
+        // With the preference on, keep the bar alive ONLY while Spotify is
+        // playing. Re-present immediately when playback starts.
+        let shouldKeepOn = AppSettings.shared.$keepTouchBarOn
+        let isPlaying = LyricsController.shared.$isPlaying
+
+        settingsCancellable = shouldKeepOn
+            .combineLatest(isPlaying)
+            .removeDuplicates { $0.0 == $1.0 && $0.1 == $1.1 }
+            .sink { [weak self] enabled, playing in
                 Task { @MainActor in
                     guard let self else { return }
                     self.keepOnTimer?.invalidate()
                     self.keepOnTimer = nil
-                    if enabled {
-                        self.present()
-                        self.keepOnTimer = Timer.scheduledTimer(
-                            withTimeInterval: 3, repeats: true
-                        ) { [weak self] _ in
-                            Task { @MainActor in
-                                guard let self,
-                                      AppSettings.shared.keepTouchBarOn else { return }
-                                if !self.isPresented { self.present() }
-                            }
+
+                    guard enabled, playing else { return }
+                    if !self.isPresented { self.present() }
+                    self.keepOnTimer = Timer.scheduledTimer(
+                        withTimeInterval: 3, repeats: true
+                    ) { [weak self] _ in
+                        Task { @MainActor in
+                            guard let self,
+                                  AppSettings.shared.keepTouchBarOn,
+                                  LyricsController.shared.isPlaying else { return }
+                            if !self.isPresented { self.present() }
                         }
                     }
                 }
@@ -205,10 +211,11 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         playButton.image = playImage
     }
 
+    @MainActor
     @objc func toggle() {
         // With "keep on" enabled the bar is always shown, so the tray button
         // simply re-presents it instead of hiding it.
-        if AppSettings.shared.keepTouchBarOn {
+        if AppSettings.shared.keepTouchBarOn && LyricsController.shared.isPlaying {
             present()
         } else {
             isPresented ? hide() : present()
