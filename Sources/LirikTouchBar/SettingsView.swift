@@ -29,6 +29,10 @@ struct SettingsView: View {
                         .frame(width: 34, alignment: .trailing)
                 }
                 Stepper("Visible lines: \(settings.lineCount)", value: $settings.lineCount, in: 1...3)
+                Toggle("Keep Touch Bar always on", isOn: $settings.keepTouchBarOn)
+                Text("Automatically restores the lyric bar if macOS dismisses it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 TextField("Text when no lyrics are found", text: $settings.fallbackText)
                     .textFieldStyle(.roundedBorder)
             }

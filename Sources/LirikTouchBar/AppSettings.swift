@@ -8,6 +8,7 @@ private enum SettingsKey {
     static let fallbackText = "fallbackText"
     static let romanizeKorean = "romanizeKorean"
     static let romanizeDigits = "romanizeDigits"
+    static let keepTouchBarOn = "keepTouchBarOn"
 }
 
 final class AppSettings: ObservableObject {
@@ -50,5 +51,11 @@ final class AppSettings: ObservableObject {
     @Published var romanizeDigits: Bool =
         UserDefaults.standard.object(forKey: SettingsKey.romanizeDigits) as? Bool ?? true {
         didSet { UserDefaults.standard.set(romanizeDigits, forKey: SettingsKey.romanizeDigits) }
+    }
+
+    /// Re-present the lyric bar automatically if macOS dismisses it.
+    @Published var keepTouchBarOn: Bool =
+        UserDefaults.standard.object(forKey: SettingsKey.keepTouchBarOn) as? Bool ?? true {
+        didSet { UserDefaults.standard.set(keepTouchBarOn, forKey: SettingsKey.keepTouchBarOn) }
     }
 }

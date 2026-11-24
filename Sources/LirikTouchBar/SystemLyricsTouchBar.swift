@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 /// The always-visible, system-modal lyric bar on the physical Touch Bar.
 /// Two modes: lyrics (with transport controls) and system controls
@@ -61,6 +62,8 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
 
     private var trayItem: NSCustomTouchBarItem?
     private var autoReturnTimer: Timer?
+    private var keepOnTimer: Timer?
+    private var settingsCancellable: AnyCancellable?
     private(set) var isPresented = false
     private var cachedPlayingState: Bool?
     private var cachedMutedState: Bool?
@@ -133,6 +136,30 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         PrivateTouchBar.addSystemTrayItem(item)
         PrivateTouchBar.setControlStripPresence(Self.trayID, visible: true)
         present()
+
+        // macOS can dismiss a system-modal bar on app/window changes. With the
+        // preference on, re-present it automatically so it stays on screen.
+        settingsCancellable = AppSettings.shared.$keepTouchBarOn
+            .removeDuplicates()
+            .sink { [weak self] enabled in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.keepOnTimer?.invalidate()
+                    self.keepOnTimer = nil
+                    if enabled {
+                        self.present()
+                        self.keepOnTimer = Timer.scheduledTimer(
+                            withTimeInterval: 3, repeats: true
+                        ) { [weak self] _ in
+                            Task { @MainActor in
+                                guard let self,
+                                      AppSettings.shared.keepTouchBarOn else { return }
+                                if !self.isPresented { self.present() }
+                            }
+                        }
+                    }
+                }
+            }
     }
 
     func present() {
@@ -179,7 +206,13 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     }
 
     @objc func toggle() {
-        isPresented ? hide() : present()
+        // With "keep on" enabled the bar is always shown, so the tray button
+        // simply re-presents it instead of hiding it.
+        if AppSettings.shared.keepTouchBarOn {
+            present()
+        } else {
+            isPresented ? hide() : present()
+        }
     }
 
     // MARK: - NSTouchBarDelegate
