@@ -25,7 +25,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private static let volumeID = NSTouchBarItem.Identifier("com.iseng.lirik.volume")
     private static let muteID = NSTouchBarItem.Identifier("com.iseng.lirik.mute")
     private static let keyboardID = NSTouchBarItem.Identifier("com.iseng.lirik.keyboard")
-    private static let nativeID = NSTouchBarItem.Identifier("com.iseng.lirik.native")
     private static let backID = NSTouchBarItem.Identifier("com.iseng.lirik.back")
     private static let brightnessDownID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness.down")
     private static let brightnessUpID = NSTouchBarItem.Identifier("com.iseng.lirik.brightness.up")
@@ -50,7 +49,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private let volumeSlider = NSSlider()
     private let keyboardSlider = NSSlider()
     private let muteButton = NSButton()
-    private let nativeButton = NSButton()
     private let backButton = NSButton()
 
     private let brightnessDownButton = NSButton()
@@ -93,8 +91,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                         description: "System controls", action: #selector(showSystemControls))
         configureButton(muteButton, symbol: "speaker.fill",
                         description: "Mute", action: #selector(muteTapped))
-        configureButton(nativeButton, symbol: "command",
-                        description: "Show native Touch Bar", action: #selector(nativeTapped))
         configureButton(backButton, symbol: "music.note",
                         description: "Back to lyrics", action: #selector(showLyrics))
 
@@ -218,8 +214,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
                                     image: KeyboardLightIcon.image(increase: true))
         case Self.muteID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = muteButton
-        case Self.nativeID:
-            item = NSCustomTouchBarItem(identifier: identifier); item.view = nativeButton
         case Self.backID:
             item = NSCustomTouchBarItem(identifier: identifier); item.view = backButton
         case Self.brightnessDownID:
@@ -258,7 +252,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         case .controls:
             bar.defaultItemIdentifiers = [
                 Self.brightnessID, Self.volumeID, Self.keyboardID, Self.muteID,
-                .flexibleSpace, Self.nativeID, Self.backID
+                .flexibleSpace, Self.backID
             ]
         case .functionKeys:
             bar.defaultItemIdentifiers = [
@@ -452,20 +446,6 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         SystemControls.isMuted.toggle()
         refreshSystemControlValues()
         scheduleAutoReturn()
-    }
-
-    /// Temporarily reveals the native Touch Bar (all system functions), then
-    /// brings the lyric bar back after a short delay.
-    @objc private func nativeTapped() {
-        autoReturnTimer?.invalidate()
-        hide()
-        autoReturnTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.mode = .lyrics
-                self?.touchBar = self!.makeBar()
-                self?.present()
-            }
-        }
     }
 }
 

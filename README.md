@@ -46,8 +46,6 @@ is minimized or hidden.
   brightness (☀), volume (🔊), keyboard backlight (⌨), and mute** (because the
   full-width bar hides the system Control Strip). It returns to lyrics after
   ~6 seconds, or tap the ♪ button to go back.
-- A **command button** in that mode temporarily reveals the **native Touch Bar**
-  (all system functions) for 15 seconds, then restores the lyrics.
 - **Two ways to reach the same controls:**
   1. **Slider button** on the lyric bar — no permission needed; shows labeled
      sliders for display brightness, volume, keyboard backlight and mute.
