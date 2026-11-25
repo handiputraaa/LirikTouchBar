@@ -65,6 +65,7 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
     private var keepOnTimer: Timer?
     private var settingsCancellable: AnyCancellable?
     private(set) var isPresented = false
+    private var lastPresentDate = Date.distantPast
     private var cachedPlayingState: Bool?
     private var cachedMutedState: Bool?
 
@@ -195,7 +196,11 @@ final class SystemLyricsTouchBar: NSObject, NSTouchBarDelegate {
         label.font = fittingFont(for: text)
         label.stringValue = text
         label.needsDisplay = true
-        if isPresented {
+        // Push the updated label to the system bar, but no more than once per
+        // second — repeated private presents in a short window can block AppKit.
+        let now = Date()
+        if isPresented, now.timeIntervalSince(lastPresentDate) > 1 {
+            lastPresentDate = now
             PrivateTouchBar.present(touchBar, trayID: Self.trayID)
         }
     }

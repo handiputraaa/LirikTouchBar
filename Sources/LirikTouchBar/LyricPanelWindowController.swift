@@ -96,8 +96,11 @@ final class LyricPanelWindowController: NSWindowController, NSWindowDelegate {
 
     @MainActor
     func show() {
-        // Ensure the always-on bar comes back too (e.g. after the ✕ was tapped).
-        SystemLyricsTouchBar.shared.present()
+        // Only present if it isn't already up — repeated system-modal presents
+        // can block AppKit, especially right after a menu action.
+        if !SystemLyricsTouchBar.shared.isPresented {
+            SystemLyricsTouchBar.shared.present()
+        }
         touchBarController.update()
         NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)

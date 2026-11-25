@@ -82,12 +82,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     // MARK: - Actions
 
+    // Defer every action to the next run-loop turn: NSStatusBar menu actions run
+    // while the menu is still tracking, and touching the private system-modal
+    // Touch Bar API during that window can block AppKit and freeze the app.
     @objc private func showPanel() {
-        LyricPanelWindowController.shared.show()
+        Task { @MainActor in LyricPanelWindowController.shared.show() }
     }
 
     @objc private func toggleTouchBarLyrics() {
-        SystemLyricsTouchBar.shared.toggle()
+        Task { @MainActor in SystemLyricsTouchBar.shared.toggle() }
     }
 
     @objc private func togglePlayback() {
@@ -99,11 +102,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     @objc private func showFnControls() {
-        SystemLyricsTouchBar.shared.showFunctionKeys()
+        Task { @MainActor in SystemLyricsTouchBar.shared.showFunctionKeys() }
     }
 
     @objc private func openPreferences() {
-        PreferencesWindowController.shared.show()
+        Task { @MainActor in PreferencesWindowController.shared.show() }
     }
 
     @objc private func quitApp() {
