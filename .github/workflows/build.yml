@@ -6,7 +6,11 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # macos-latest maps to arm64 runners, which are often capacity-constrained.
+    # Intel runners are more available; the build script still produces a
+    # universal binary by cross-compiling the other architecture.
+    runs-on: macos-15-intel
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
